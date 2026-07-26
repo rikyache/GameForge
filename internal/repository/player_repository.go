@@ -31,7 +31,7 @@ func AddPlayer(db *sql.DB, name string, health int) error {
 	return err
 }
 
-func ListPlayer(db *sql.DB, id int) (models.Player, error) {
+func GetPlayer(db *sql.DB, id int) (models.Player, error) {
 	query := `
 	SELECT id, name, health FROM players
 	WHERE id = $1
