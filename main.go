@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"strconv"
 	"testsmth/internal/database"
 	"testsmth/internal/repository"
-
-	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -17,10 +17,13 @@ func main() {
 		fmt.Fprintln(w, "Hello Docker")
 	})
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found")
+	}
+
 	db := database.Connect()
 	defer db.Close()
-
-	repository.AddPlayer(db, "Stas", 200)
 
 	//функция для получения человека по id через Http
 	http.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
@@ -49,12 +52,10 @@ func main() {
 		json.NewEncoder(w).Encode(player)
 	})
 
-	err := repository.CreateTable(db)
+	err = repository.CreateTable(db)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(player)
 
 	http.ListenAndServe(":8080", nil)
 }
