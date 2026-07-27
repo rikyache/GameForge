@@ -54,16 +54,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = repository.AddPlayer(db, "Kirill", 100)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	player, err := repository.GetPlayer(db, 1)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	fmt.Println(player)
 
 	http.ListenAndServe(":8080", nil)

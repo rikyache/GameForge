@@ -5,7 +5,9 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
 
   postgres:
     image: postgres:17
@@ -17,11 +19,18 @@ services:
       POSTGRES_PASSWORD: 12345
       POSTGRES_DB: practice
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kirill -d practice"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
     ports:
       - "5432:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
 
 volumes:
   postgres_data:
