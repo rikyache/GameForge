@@ -48,3 +48,35 @@ func GetPlayer(db *sql.DB, id int) (models.Player, error) {
 	return player, err
 
 }
+
+func ListPlayers(db *sql.DB) ([]models.Player, error) {
+	query := `
+	SELECT id, name, health FROM players
+	`
+
+	var Players []models.Player
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var player models.Player
+
+		err := rows.Scan(
+			&player.Id,
+			&player.Name,
+			&player.Health,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		Players = append(Players, player)
+	}
+
+	return Players, nil
+}

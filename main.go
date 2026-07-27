@@ -8,15 +8,15 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"testsmth/internal/database"
+	"testsmth/internal/models"
 	"testsmth/internal/repository"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello Docker")
-	})
 
+	//initialization
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("No .env file found")
@@ -25,17 +25,25 @@ func main() {
 	db := database.Connect()
 	defer db.Close()
 
+	//handlers
+
+	//base url
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello Docker")
+	})
+
 	//функция для получения человека по id через Http
-	http.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/player/", func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method != "GET" {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		id, err := strconv.Atoi(
-			r.URL.Query().Get("id"),
-		)
+		idStr := strings.TrimPrefix(r.URL.Path, "/player/")
+
+		id, err := strconv.Atoi(idStr)
+		
 		if err != nil {
 			http.Error(w, "invalid id", http.StatusBadRequest)
 			return
@@ -49,6 +57,23 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 
+		json.NewEncoder(w).Encode(player)
+	})
+
+	http.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var player []models.Player
+		player, err := repository.ListPlayers(db)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(player)
 	})
 
