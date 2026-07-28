@@ -33,7 +33,7 @@ func main() {
 		fmt.Fprintln(w, "Hello Docker")
 	})
 
-	//функция для получения человека по id через Http
+	//функция для получения или удаления человека по id
 	http.HandleFunc("/player/", func(w http.ResponseWriter, r *http.Request) {
 
 		//получение чистого id
@@ -70,11 +70,6 @@ func main() {
 
 	//список всех людей
 	http.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
 		var player []models.Player
 		player, err := repository.ListPlayers(db)
 		if err != nil {
@@ -84,6 +79,25 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(player)
+
+	})
+
+	http.HandleFunc("/players/add", func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Method != "POST" {
+			http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		}
+
+		var player models.Player
+
+		err := json.NewDecoder(r.Body).Decode(&player)
+		if err != nil {
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+
+		err = repository.AddPlayer(db, player.Name, player.Health)
+		w.WriteHeader(http.StatusCreated)
 	})
 
 	err = repository.CreateTable(db)
