@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"strconv"
@@ -12,6 +10,9 @@ import (
 	"testsmth/internal/database"
 	"testsmth/internal/models"
 	"testsmth/internal/repository"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -35,31 +36,39 @@ func main() {
 	//функция для получения человека по id через Http
 	http.HandleFunc("/player/", func(w http.ResponseWriter, r *http.Request) {
 
-		if r.Method != "GET" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
+		//получение чистого id
 		idStr := strings.TrimPrefix(r.URL.Path, "/player/")
-
 		id, err := strconv.Atoi(idStr)
-		
+
 		if err != nil {
 			http.Error(w, "invalid id", http.StatusBadRequest)
 			return
 		}
 
-		player, err := repository.GetPlayer(db, id)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch r.Method {
+		case "GET":
+			player, err := repository.GetPlayer(db, id)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(player)
+
+		case "DELETE":
+			err := repository.RemovePlayer(db, id)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		default:
+			http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-
-		json.NewEncoder(w).Encode(player)
 	})
 
+	//список всех людей
 	http.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

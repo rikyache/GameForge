@@ -80,3 +80,19 @@ func ListPlayers(db *sql.DB) ([]models.Player, error) {
 
 	return Players, nil
 }
+
+func RemovePlayer(db *sql.DB, id int) error {
+
+	query := `
+		DELETE FROM players
+		WHERE id = $1
+	`
+
+	_, err := db.Exec(query, id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
