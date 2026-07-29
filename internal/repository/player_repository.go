@@ -5,35 +5,20 @@ import (
 	"testsmth/internal/models"
 )
 
-func CreateTable(db *sql.DB) error {
-
+func AddPlayer(db *sql.DB, name string) error {
 	query := `
-	CREATE TABLE IF NOT EXISTS players (
-	    id SERIAL PRIMARY KEY,
-	    name TEXT NOT NULL,
-	    health INT
-	);
-	`
-
-	_, err := db.Exec(query)
-
-	return err
-}
-
-func AddPlayer(db *sql.DB, name string, health int) error {
-	query := `
-	INSERT INTO players (name, health)
-	VALUES ($1, $2)
+	INSERT INTO players (name)
+	VALUES ($1)
 `
 
-	_, err := db.Exec(query, name, health)
+	_, err := db.Exec(query, name)
 
 	return err
 }
 
 func GetPlayer(db *sql.DB, id int) (models.Player, error) {
 	query := `
-	SELECT id, name, health FROM players
+	SELECT id, name FROM players
 	WHERE id = $1
 `
 
@@ -42,7 +27,6 @@ func GetPlayer(db *sql.DB, id int) (models.Player, error) {
 	err := db.QueryRow(query, id).Scan(
 		&player.Id,
 		&player.Name,
-		&player.Health,
 	)
 
 	return player, err
@@ -51,7 +35,7 @@ func GetPlayer(db *sql.DB, id int) (models.Player, error) {
 
 func ListPlayers(db *sql.DB) ([]models.Player, error) {
 	query := `
-	SELECT id, name, health FROM players
+	SELECT id, name FROM players
 	`
 
 	var Players []models.Player
@@ -68,7 +52,6 @@ func ListPlayers(db *sql.DB) ([]models.Player, error) {
 		err := rows.Scan(
 			&player.Id,
 			&player.Name,
-			&player.Health,
 		)
 
 		if err != nil {

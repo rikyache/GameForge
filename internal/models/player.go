@@ -1,7 +1,6 @@
 package models
 
 type Player struct {
-	Id     int64  `db:"id"		json:"id"`
-	Name   string `db:"name"	json:"name"`
-	Health int    `db:"health"	json:"health"`
+	Id   int64  `db:"id"		json:"id"`
+	Name string `db:"name"	json:"name"`
 }

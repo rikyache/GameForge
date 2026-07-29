@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"testsmth/internal/database"
 	"testsmth/internal/handlers"
-	"testsmth/internal/repository"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -38,11 +37,6 @@ func main() {
 	http.HandleFunc("/players", playerHandler.ListPlayers)
 
 	http.HandleFunc("/players/add", playerHandler.AddPlayer)
-
-	err = repository.CreateTable(db)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	http.ListenAndServe(":8080", nil)
 }
