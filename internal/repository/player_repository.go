@@ -7,7 +7,7 @@ import (
 
 func AddPlayer(db *sql.DB, name string) error {
 	query := `
-	INSERT INTO players (name)
+	INSERT INTO players (name, balance)
 	VALUES ($1)
 `
 
@@ -18,14 +18,14 @@ func AddPlayer(db *sql.DB, name string) error {
 
 func GetPlayer(db *sql.DB, id int) (models.Player, error) {
 	query := `
-	SELECT id, name FROM players
+	SELECT id, name, balance, created_at FROM players
 	WHERE id = $1
 `
 
 	var player models.Player
 
 	err := db.QueryRow(query, id).Scan(
-		&player.Id,
+		&player.ID,
 		&player.Name,
 	)
 
@@ -35,7 +35,8 @@ func GetPlayer(db *sql.DB, id int) (models.Player, error) {
 
 func ListPlayers(db *sql.DB) ([]models.Player, error) {
 	query := `
-	SELECT id, name FROM players
+	SELECT id, name, balance, created_at 
+	FROM players
 	`
 
 	var Players []models.Player
@@ -50,7 +51,7 @@ func ListPlayers(db *sql.DB) ([]models.Player, error) {
 		var player models.Player
 
 		err := rows.Scan(
-			&player.Id,
+			&player.ID,
 			&player.Name,
 		)
 
