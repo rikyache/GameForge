@@ -3,7 +3,6 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -60,7 +59,6 @@ func (h *PlayerHandler) ListPlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlayerHandler) AddPlayer(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("ADD PLAYER CALLED")
 	if r.Method != "POST" {
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 	}

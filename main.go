@@ -31,12 +31,18 @@ func main() {
 	playerHandler := handlers.PlayerHandler{
 		DB: db,
 	}
-	//функция для получения или удаления человека по id
-	http.HandleFunc("/player/", playerHandler.GetOrDeletePlayer)
-	//список всех людей
-	http.HandleFunc("/players", playerHandler.ListPlayers)
 
+	gamesHandler := handlers.GameHandler{
+		DB: db,
+	}
+	//игроки
+	http.HandleFunc("/player/", playerHandler.GetOrDeletePlayer)
+	http.HandleFunc("/players", playerHandler.ListPlayers)
 	http.HandleFunc("/players/add", playerHandler.AddPlayer)
+	//игры
+	http.HandleFunc("/games", gamesHandler.ListGames)
+	http.HandleFunc("/game/", gamesHandler.GetOrDeleteGame)
+	http.HandleFunc("/games/add", gamesHandler.AddGame)
 
 	http.ListenAndServe(":8080", nil)
 }

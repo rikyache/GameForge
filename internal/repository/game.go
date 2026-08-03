@@ -18,9 +18,9 @@ func AddGame(db *sql.DB, name string, genre string) error {
 
 func GetGame(db *sql.DB, id int) (*models.Game, error) {
 	query := `
-    SELECT id, name, genre 
-    FROM games 
-    WHERE id = $1
+		SELECT id, name, genre 
+		FROM games 
+		WHERE id = $1
 `
 
 	game := models.Game{}
