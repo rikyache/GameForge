@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testsmth/internal/database"
 	"testsmth/internal/handlers"
+	"testsmth/internal/middleware"
 	"testsmth/internal/repository"
 	"testsmth/internal/service"
 
@@ -46,5 +47,5 @@ func main() {
 	http.HandleFunc("/game/", gameHandler.GetOrDeleteGame)
 	http.HandleFunc("/games/add", gameHandler.AddGame)
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", middleware.Logger(http.DefaultServeMux))
 }
