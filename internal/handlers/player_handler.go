@@ -1,17 +1,22 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
 	"testsmth/internal/models"
-	"testsmth/internal/repository"
+	"testsmth/internal/service"
 )
 
 type PlayerHandler struct {
-	DB *sql.DB
+	Service *service.PlayerService
+}
+
+func NewPlayerHandler(service *service.PlayerService) *PlayerHandler {
+	return &PlayerHandler{
+		Service: service,
+	}
 }
 
 func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +31,7 @@ func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request
 
 	switch r.Method {
 	case "GET":
-		player, err := repository.GetPlayer(h.DB, id)
+		player, err := h.Service.GetPlayer(id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -36,7 +41,7 @@ func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request
 		json.NewEncoder(w).Encode(player)
 
 	case "DELETE":
-		err := repository.RemovePlayer(h.DB, id)
+		err := h.Service.RemovePlayer(id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -48,7 +53,7 @@ func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request
 
 func (h *PlayerHandler) ListPlayers(w http.ResponseWriter, r *http.Request) {
 	var player []models.Player
-	player, err := repository.ListPlayers(h.DB)
+	player, err := h.Service.ListPlayers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -63,7 +68,7 @@ func (h *PlayerHandler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 	}
 
-	var player models.Player
+	var player *models.Player
 
 	err := json.NewDecoder(r.Body).Decode(&player)
 	if err != nil {
@@ -71,6 +76,6 @@ func (h *PlayerHandler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.AddPlayer(h.DB, player.Name)
+	err = h.Service.AddPlayer(*player)
 	w.WriteHeader(http.StatusCreated)
 }

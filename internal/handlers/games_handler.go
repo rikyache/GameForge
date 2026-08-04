@@ -1,17 +1,22 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
 	"testsmth/internal/models"
-	"testsmth/internal/repository"
+	"testsmth/internal/service"
 )
 
 type GameHandler struct {
-	DB *sql.DB
+	Service *service.GameService
+}
+
+func NewGameHandler(service *service.GameService) *GameHandler {
+	return &GameHandler{
+		Service: service,
+	}
 }
 
 func (h *GameHandler) ListGames(w http.ResponseWriter, r *http.Request) {
@@ -19,12 +24,14 @@ func (h *GameHandler) ListGames(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	var game []models.Game
-	game, err := repository.ListGames(h.DB)
+
+	game, err := h.Service.ListGames()
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(game)
 }
@@ -41,7 +48,8 @@ func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 
 	case http.MethodGet:
-		game, err := repository.GetGame(h.DB, id)
+
+		game, err := h.Service.GetGame(id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -56,7 +64,8 @@ func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case http.MethodDelete:
-		err = repository.RemoveGame(h.DB, id)
+
+		err = h.Service.DeleteGame(id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -83,6 +92,6 @@ func (h *GameHandler) AddGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.AddGame(h.DB, game.Name, game.Genre)
+	err = h.Service.AddGame(*game)
 	w.WriteHeader(http.StatusCreated)
 }

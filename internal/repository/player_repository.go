@@ -5,18 +5,28 @@ import (
 	"testsmth/internal/models"
 )
 
-func AddPlayer(db *sql.DB, name string) error {
+type PlayerRepository struct {
+	DB *sql.DB
+}
+
+func NewPlayerRepository(db *sql.DB) *PlayerRepository {
+	return &PlayerRepository{
+		DB: db,
+	}
+}
+
+func (r *PlayerRepository) AddPlayer(name string) error {
 	query := `
 	INSERT INTO players (name)
 	VALUES ($1)
 `
 
-	_, err := db.Exec(query, name)
+	_, err := r.DB.Exec(query, name)
 
 	return err
 }
 
-func GetPlayer(db *sql.DB, id int) (models.Player, error) {
+func (r *PlayerRepository) GetPlayer(id int) (*models.Player, error) {
 	query := `
 	SELECT id, name, balance, created_at FROM players
 	WHERE id = $1
@@ -24,18 +34,18 @@ func GetPlayer(db *sql.DB, id int) (models.Player, error) {
 
 	var player models.Player
 
-	err := db.QueryRow(query, id).Scan(
+	err := r.DB.QueryRow(query, id).Scan(
 		&player.ID,
 		&player.Name,
 		&player.Balance,
 		&player.CreatedAt,
 	)
 
-	return player, err
+	return &player, err
 
 }
 
-func ListPlayers(db *sql.DB) ([]models.Player, error) {
+func (r *PlayerRepository) ListPlayers() ([]models.Player, error) {
 	query := `
 	SELECT id, name, balance, created_at 
 	FROM players
@@ -43,7 +53,7 @@ func ListPlayers(db *sql.DB) ([]models.Player, error) {
 
 	var Players []models.Player
 
-	rows, err := db.Query(query)
+	rows, err := r.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -69,14 +79,14 @@ func ListPlayers(db *sql.DB) ([]models.Player, error) {
 	return Players, nil
 }
 
-func RemovePlayer(db *sql.DB, id int) error {
+func (r *PlayerRepository) RemovePlayer(id int) error {
 
 	query := `
 		DELETE FROM players
 		WHERE id = $1
 	`
 
-	_, err := db.Exec(query, id)
+	_, err := r.DB.Exec(query, id)
 
 	if err != nil {
 		return err

@@ -5,18 +5,28 @@ import (
 	"testsmth/internal/models"
 )
 
-func AddGame(db *sql.DB, name string, genre string) error {
+type GameRepository struct {
+	DB *sql.DB
+}
+
+func NewGameRepository(db *sql.DB) *GameRepository {
+	return &GameRepository{
+		DB: db,
+	}
+}
+
+func (r *GameRepository) AddGame(name string, genre string) error {
 	query := `
 	INSERT INTO games (name, genre)
 	VALUES ($1, $2);
 	`
 
-	_, err := db.Exec(query, name, genre)
+	_, err := r.DB.Exec(query, name, genre)
 
 	return err
 }
 
-func GetGame(db *sql.DB, id int) (*models.Game, error) {
+func (r *GameRepository) GetGame(id int) (*models.Game, error) {
 	query := `
 		SELECT id, name, genre 
 		FROM games 
@@ -25,7 +35,7 @@ func GetGame(db *sql.DB, id int) (*models.Game, error) {
 
 	game := models.Game{}
 
-	err := db.QueryRow(query, id).Scan(
+	err := r.DB.QueryRow(query, id).Scan(
 		&game.ID,
 		&game.Name,
 		&game.Genre,
@@ -38,13 +48,13 @@ func GetGame(db *sql.DB, id int) (*models.Game, error) {
 	return &game, nil
 }
 
-func ListGames(db *sql.DB) ([]models.Game, error) {
+func (r *GameRepository) ListGames() ([]models.Game, error) {
 	query := `
     SELECT id, name, genre
     FROM games
 `
 	var games []models.Game
-	rows, err := db.Query(query)
+	rows, err := r.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +83,11 @@ func ListGames(db *sql.DB) ([]models.Game, error) {
 	return games, nil
 }
 
-func RemoveGame(db *sql.DB, id int) error {
+func (r *GameRepository) RemoveGame(id int) error {
 	query := `
     DELETE FROM games
     WHERE id = $1
 `
-	_, err := db.Exec(query, id)
+	_, err := r.DB.Exec(query, id)
 	return err
 }
