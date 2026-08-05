@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -28,6 +29,7 @@ func (h *GameHandler) ListGames(w http.ResponseWriter, r *http.Request) {
 	game, err := h.Service.ListGames()
 
 	if err != nil {
+		log.Printf("failed to list games:%v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -41,6 +43,7 @@ func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(idStr)
 
 	if err != nil {
+		log.Printf("failed to parse id: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -51,6 +54,7 @@ func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 
 		game, err := h.Service.GetGame(id)
 		if err != nil {
+			log.Printf("failed to get game:%v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -59,6 +63,7 @@ func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 
 		err = json.NewEncoder(w).Encode(game)
 		if err != nil {
+			log.Printf("failed to write response: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -67,6 +72,7 @@ func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 
 		err = h.Service.DeleteGame(id)
 		if err != nil {
+			log.Printf("failed to delete game:%v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -88,6 +94,7 @@ func (h *GameHandler) AddGame(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&game)
 	if err != nil {
+		log.Printf("failed to parse body: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
