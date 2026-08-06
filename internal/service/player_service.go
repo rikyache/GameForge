@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testsmth/internal/models"
 	"testsmth/internal/repository"
 )
@@ -16,14 +17,26 @@ func NewPlayerService(repo *repository.PlayerRepository) *PlayerService {
 }
 
 func (s *PlayerService) GetPlayer(id int) (*models.Player, error) {
+	if id < 0 {
+		return nil, errors.New("invalid id")
+	}
 	return s.repo.GetPlayer(id)
 }
 
 func (s *PlayerService) AddPlayer(player models.Player) error {
+	if player.Name == "" {
+		return errors.New("player name is empty")
+	}
+	if len(player.Name) > 100 {
+		return errors.New("player name is too long")
+	}
 	return s.repo.AddPlayer(player.Name)
 }
 
 func (s *PlayerService) RemovePlayer(id int) error {
+	if id < 0 {
+		return errors.New("invalid id")
+	}
 	return s.repo.RemovePlayer(id)
 }
 
