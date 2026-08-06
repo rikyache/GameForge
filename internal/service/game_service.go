@@ -16,13 +16,13 @@ func NewGameService(repo *repository.GameRepository) *GameService {
 
 func (s *GameService) AddGame(game models.Game) error {
 	if game.Name == "" {
-		return errors.New("game name is empty")
+		return ErrGameNameEmpty
 	}
 	if game.Genre == "" {
-		return errors.New("game genre is empty")
+		return ErrGameGenreEmpty
 	}
 	if len(game.Name) > 255 {
-		return errors.New("game name is too long")
+		return ErrGameNameTooLong
 	}
 	return s.repo.AddGame(
 		game.Name,

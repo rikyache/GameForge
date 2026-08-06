@@ -18,7 +18,7 @@ func NewPlayerService(repo *repository.PlayerRepository) *PlayerService {
 
 func (s *PlayerService) GetPlayer(id int) (*models.Player, error) {
 	if id < 0 {
-		return nil, errors.New("invalid id")
+		return nil, ErrInvalidID
 	}
 	return s.repo.GetPlayer(id)
 }
@@ -28,14 +28,14 @@ func (s *PlayerService) AddPlayer(player models.Player) error {
 		return errors.New("player name is empty")
 	}
 	if len(player.Name) > 100 {
-		return errors.New("player name is too long")
+		return ErrPlayerNameTooLong
 	}
 	return s.repo.AddPlayer(player.Name)
 }
 
 func (s *PlayerService) RemovePlayer(id int) error {
 	if id < 0 {
-		return errors.New("invalid id")
+		return ErrInvalidID
 	}
 	return s.repo.RemovePlayer(id)
 }
