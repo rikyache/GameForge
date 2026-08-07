@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"testsmth/internal/models"
 )
 
@@ -15,7 +16,7 @@ func NewPlayerGameRepository(db *sql.DB) *PlayerGameRepository {
 	}
 }
 
-func (r *PlayerGameRepository) AddGame(playerID int64, gameID int) error {
+func (r *PlayerGameRepository) BuyGame(playerID int64, gameID int64) error {
 	query := `
     INSERT INTO player_games(player_id, game_id)
     VALUES ($1, $2)
@@ -75,19 +76,28 @@ func (r *PlayerGameRepository) GetPlayerGames(playerID int64) ([]models.OwnedGam
 	return games, nil
 }
 
-func (r *PlayerGameRepository) RemoveGame(playerID int64, gameID int) error {
+func (r *PlayerGameRepository) RemoveGame(playerID int64, gameID int64) error {
 	query := `
 	DELETE FROM player_games
     WHERE player_id = $1
 	AND game_id = $2
 `
 
-	_, err := r.DB.Exec(query, playerID, gameID)
+	result, err := r.DB.Exec(query, playerID, gameID)
 
-	return err
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errors.New("game not found")
+	}
+
+	return nil
 }
 
-func (r *PlayerGameRepository) Exists(playerID int64, gameID int) (bool, error) {
+func (r *PlayerGameRepository) Exists(playerID int64, gameID int64) (bool, error) {
 	query := `
     SELECT EXISTS (
 		SELECT 1

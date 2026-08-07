@@ -11,5 +11,9 @@ var (
 	ErrGameNameTooLong = errors.New("game name is too long")
 	ErrGameGenreEmpty  = errors.New("game genre is empty")
 
-	ErrInvalidID = errors.New("invalid id")
+	ErrInvalidGameID   = errors.New("invalid game id")
+	ErrInvalidPlayerID = errors.New("invalid player id")
+
+	ErrAlreadyExists = errors.New("already exists")
+	ErrGameNotFound  = errors.New("game not found for player")
 )

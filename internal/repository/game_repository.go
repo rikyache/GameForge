@@ -26,7 +26,7 @@ func (r *GameRepository) AddGame(name string, genre string) error {
 	return err
 }
 
-func (r *GameRepository) GetGame(id int) (*models.Game, error) {
+func (r *GameRepository) GetGame(id int64) (*models.Game, error) {
 	query := `
 		SELECT id, name, genre 
 		FROM games 
@@ -83,7 +83,7 @@ func (r *GameRepository) ListGames() ([]models.Game, error) {
 	return games, nil
 }
 
-func (r *GameRepository) RemoveGame(id int) error {
+func (r *GameRepository) RemoveGame(id int64) error {
 	query := `
     DELETE FROM games
     WHERE id = $1

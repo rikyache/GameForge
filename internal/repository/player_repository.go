@@ -26,7 +26,7 @@ func (r *PlayerRepository) AddPlayer(name string) error {
 	return err
 }
 
-func (r *PlayerRepository) GetPlayer(id int) (*models.Player, error) {
+func (r *PlayerRepository) GetPlayer(id int64) (*models.Player, error) {
 	query := `
 	SELECT id, name, balance, created_at FROM players
 	WHERE id = $1
@@ -79,7 +79,7 @@ func (r *PlayerRepository) ListPlayers() ([]models.Player, error) {
 	return Players, nil
 }
 
-func (r *PlayerRepository) RemovePlayer(id int) error {
+func (r *PlayerRepository) RemovePlayer(id int64) error {
 
 	query := `
 		DELETE FROM players

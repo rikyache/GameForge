@@ -16,9 +16,9 @@ func NewPlayerService(repo *repository.PlayerRepository) *PlayerService {
 	}
 }
 
-func (s *PlayerService) GetPlayer(id int) (*models.Player, error) {
+func (s *PlayerService) GetPlayer(id int64) (*models.Player, error) {
 	if id < 0 {
-		return nil, ErrInvalidID
+		return nil, ErrInvalidPlayerID
 	}
 	return s.repo.GetPlayer(id)
 }
@@ -33,9 +33,9 @@ func (s *PlayerService) AddPlayer(player models.Player) error {
 	return s.repo.AddPlayer(player.Name)
 }
 
-func (s *PlayerService) RemovePlayer(id int) error {
+func (s *PlayerService) RemovePlayer(id int64) error {
 	if id < 0 {
-		return ErrInvalidID
+		return ErrInvalidPlayerID
 	}
 	return s.repo.RemovePlayer(id)
 }

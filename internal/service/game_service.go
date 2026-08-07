@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"testsmth/internal/models"
 	"testsmth/internal/repository"
 )
@@ -30,16 +29,16 @@ func (s *GameService) AddGame(game models.Game) error {
 	)
 }
 
-func (s *GameService) DeleteGame(id int) error {
+func (s *GameService) DeleteGame(id int64) error {
 	if id <= 0 {
-		return errors.New("invalid id")
+		return ErrInvalidGameID
 	}
 	return s.repo.RemoveGame(id)
 }
 
-func (s *GameService) GetGame(id int) (*models.Game, error) {
+func (s *GameService) GetGame(id int64) (*models.Game, error) {
 	if id <= 0 {
-		return nil, errors.New("invalid id")
+		return nil, ErrInvalidGameID
 	}
 	return s.repo.GetGame(id)
 }

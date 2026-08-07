@@ -38,6 +38,10 @@ func main() {
 	gameService := service.NewGameService(gameRepo)
 	gameHandler := handlers.NewGameHandler(gameService)
 
+	playerGamesRepo := repository.NewPlayerGameRepository(db)
+	playerGamesService := service.NewPlayerGamesService(playerGamesRepo)
+	playerGamesHandler := handlers.NewPlayerGamesHandler(playerGamesService)
+
 	//игроки
 	http.HandleFunc("/player/", playerHandler.GetOrDeletePlayer)
 	http.HandleFunc("/players", playerHandler.ListPlayers)
@@ -46,6 +50,21 @@ func main() {
 	http.HandleFunc("/games", gameHandler.ListGames)
 	http.HandleFunc("/game/", gameHandler.GetOrDeleteGame)
 	http.HandleFunc("/games/add", gameHandler.AddGame)
+	//связь игры-игроки
+	http.HandleFunc("/players/games", playerGamesHandler.BuyGame)
+
+	http.HandleFunc("/players/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			playerGamesHandler.GetPlayerGames(w, r)
+
+		case http.MethodDelete:
+			playerGamesHandler.RemoveGame(w, r)
+
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	http.ListenAndServe(":8080", middleware.Logger(http.DefaultServeMux))
 }

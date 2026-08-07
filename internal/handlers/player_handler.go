@@ -23,7 +23,7 @@ func NewPlayerHandler(service *service.PlayerService) *PlayerHandler {
 func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request) {
 	//получение чистого id
 	idStr := strings.TrimPrefix(r.URL.Path, "/player/")
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 
 	if err != nil {
 		log.Printf("failed to parse id: %v", err)
