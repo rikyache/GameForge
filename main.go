@@ -38,7 +38,7 @@ func main() {
 	gameService := service.NewGameService(gameRepo)
 	gameHandler := handlers.NewGameHandler(gameService)
 
-	playerGamesRepo := repository.NewPlayerGameRepository(db)
+	playerGamesRepo := repository.NewPlayerGameRepository(db, playerRepo, gameRepo)
 	playerGamesService := service.NewPlayerGamesService(playerGamesRepo)
 	playerGamesHandler := handlers.NewPlayerGamesHandler(playerGamesService)
 
@@ -51,7 +51,7 @@ func main() {
 	http.HandleFunc("/game/", gameHandler.GetOrDeleteGame)
 	http.HandleFunc("/games/add", gameHandler.AddGame)
 	//связь игры-игроки
-	http.HandleFunc("/players/games", playerGamesHandler.BuyGame)
+	http.HandleFunc("/players/games", playerGamesHandler.AddGame)
 
 	http.HandleFunc("/players/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

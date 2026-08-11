@@ -94,3 +94,25 @@ func (r *PlayerRepository) RemovePlayer(id int64) error {
 
 	return nil
 }
+
+func (r *PlayerRepository) GetBalance(tx *sql.Tx, playerID int64) (int, error) {
+	var balance int
+
+	err := tx.QueryRow(`
+	SELECT balance 
+	FROM players
+	WHERE id = $1
+	`, playerID).Scan(&balance)
+
+	return balance, err
+}
+
+func (r *PlayerRepository) UpdateBalance(tx *sql.Tx, playerID int64, balance int) error {
+	_, err := tx.Exec(`
+	UPDATE players 
+	SET balance = $1
+	WHERE id = $2
+	`, balance, playerID)
+
+	return err
+}

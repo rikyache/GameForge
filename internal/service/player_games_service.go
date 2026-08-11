@@ -13,30 +13,15 @@ func NewPlayerGamesService(repo *repository.PlayerGameRepository) *PlayerGamesSe
 	return &PlayerGamesService{repo: repo}
 }
 
-func (s *PlayerGamesService) BuyGame(playerID int64, gameID int64) error {
-	if playerID <= 0 {
+func (s *PlayerGamesService) BuyGame(playerID, gameID int64) error {
+	if playerID < 0 {
 		return ErrInvalidPlayerID
 	}
-	if gameID <= 0 {
+	if gameID < 0 {
 		return ErrInvalidGameID
 	}
 
-	exists, err := s.repo.Exists(
-		playerID,
-		gameID,
-	)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return ErrAlreadyExists
-	}
-
-	return s.repo.BuyGame(
-		playerID,
-		gameID,
-	)
+	return s.repo.BuyGame(playerID, gameID)
 }
 
 func (s *PlayerGamesService) GetPlayerGames(playerID int64) ([]models.OwnedGame, error) {

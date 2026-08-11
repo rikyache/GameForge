@@ -28,7 +28,7 @@ func (r *GameRepository) AddGame(name string, genre string) error {
 
 func (r *GameRepository) GetGame(id int64) (*models.Game, error) {
 	query := `
-		SELECT id, name, genre 
+		SELECT id, name, genre, price
 		FROM games 
 		WHERE id = $1
 `
@@ -39,6 +39,7 @@ func (r *GameRepository) GetGame(id int64) (*models.Game, error) {
 		&game.ID,
 		&game.Name,
 		&game.Genre,
+		&game.Price,
 	)
 
 	if err != nil {
@@ -50,7 +51,7 @@ func (r *GameRepository) GetGame(id int64) (*models.Game, error) {
 
 func (r *GameRepository) ListGames() ([]models.Game, error) {
 	query := `
-    SELECT id, name, genre
+    SELECT id, name, genre, price
     FROM games
 `
 	var games []models.Game
@@ -67,6 +68,7 @@ func (r *GameRepository) ListGames() ([]models.Game, error) {
 			&game.ID,
 			&game.Name,
 			&game.Genre,
+			&game.Price,
 		)
 
 		if err != nil {
@@ -90,4 +92,16 @@ func (r *GameRepository) RemoveGame(id int64) error {
 `
 	_, err := r.DB.Exec(query, id)
 	return err
+}
+
+func (r *GameRepository) GetPrice(tx *sql.Tx, gameID int64) (int, error) {
+	var price int
+
+	err := tx.QueryRow(`
+		SELECT price
+		FROM games
+		WHERE id = $1
+	`, gameID).Scan(&price)
+
+	return price, err
 }
