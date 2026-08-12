@@ -186,3 +186,282 @@ func TestBuyGame(t *testing.T) {
 		})
 	}
 }
+
+func TestGetPlayerGames(t *testing.T) {
+	db, err := sql.Open(
+		"postgres",
+		"host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		t.Fatal(err)
+	}
+
+	playerGameRepo := NewPlayerGameRepository(db, nil, nil)
+
+	tests := []struct {
+		name      string
+		gameCount int
+		wantCount int
+	}{
+		{
+			name:      "player has one game",
+			gameCount: 1,
+			wantCount: 1,
+		},
+		{
+			name:      "player has many games",
+			gameCount: 5,
+			wantCount: 5,
+		},
+		{
+			name:      "player does not have games",
+			gameCount: 0,
+			wantCount: 0,
+		},
+	}
+	//arrange
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var playerID int64
+
+			err := db.QueryRow(`
+				INSERT INTO players (name, balance)
+				VALUES ($1, $2)
+				RETURNING id
+			`, "Tester", 1000).Scan(&playerID)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for i := 0; i < tt.gameCount; i++ {
+				var gameID int64
+
+				err := db.QueryRow(`
+					INSERT INTO games (name, genre, price)
+					VALUES ($1, $2, $3)
+					RETURNING id
+			`, "TestGame", "Test", 500).Scan(&gameID)
+
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				_, err = db.Exec(`
+        			INSERT INTO player_games (player_id, game_id)
+        			VALUES ($1, $2)
+    		`, playerID, gameID)
+
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			// Act
+			games, err := playerGameRepo.GetPlayerGames(playerID)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Assert
+			if len(games) != tt.wantCount {
+				t.Errorf("got %d games, want%d", len(games), tt.wantCount)
+			}
+		})
+	}
+}
+
+func TestRemoveGame(t *testing.T) {
+	db, err := sql.Open(
+		"postgres",
+		"host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		t.Fatal(err)
+	}
+
+	playerGameRepo := NewPlayerGameRepository(db, nil, nil)
+
+	tests := []struct {
+		name       string
+		gameExists bool
+		wantErr    bool
+		wantGame   bool
+	}{
+		{
+			name:       "game exists",
+			gameExists: true,
+			wantErr:    false,
+			wantGame:   false,
+		},
+		{
+			name:       "game does not exist",
+			gameExists: false,
+			wantErr:    true,
+			wantGame:   false,
+		},
+	}
+	//arrange
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var playerID int64
+
+			err := db.QueryRow(`
+				INSERT INTO players (name, balance)
+				VALUES ($1, $2)
+				RETURNING id
+			`, "Tester", 1000).Scan(&playerID)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var gameID int64
+
+			err = db.QueryRow(`
+                 INSERT INTO games (name, genre, price)
+                 VALUES ($1, $2, $3)
+                 RETURNING id
+			`, "TestGame", "Test", 100).Scan(&gameID)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.gameExists {
+				_, err = db.Exec(`
+				INSERT INTO player_games (player_id, game_id)
+    			VALUES ($1, $2)`, playerID, gameID)
+
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			err = playerGameRepo.RemoveGame(playerID, gameID)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			}
+
+			var count int
+
+			err = db.QueryRow(`
+    			SELECT COUNT(*)
+    			FROM player_games
+    			WHERE player_id = $1
+    			AND game_id = $2
+			`, playerID, gameID).Scan(&count)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			if count != 0 {
+				t.Errorf("game was not removed")
+			}
+		})
+	}
+}
+
+func TestAddGame(t *testing.T) {
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		t.Fatal(err)
+	}
+	playerGameRepo := NewPlayerGameRepository(db, nil, nil)
+
+	tests := []struct {
+		name     string
+		wantErr  bool
+		wantGame bool
+	}{
+		{
+			name:     "add game",
+			wantErr:  false,
+			wantGame: true,
+		},
+		{
+			name:     "game already added",
+			wantErr:  true,
+			wantGame: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var playerID int64
+			err := db.QueryRow(`
+                INSERT INTO players (name, balance)
+                VALUES ($1, $2)
+                RETURNING id`, "Tester", 1000).Scan(&playerID)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var gameID int64
+			err = db.QueryRow(`
+                INSERT INTO games (name, genre, price)
+                VALUES ($1, $2, $3)
+                RETURNING id`, "TestGame", "TestGenre", 100).Scan(&gameID)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tt.wantErr {
+				_, err = db.Exec(`
+        		INSERT INTO player_games (player_id, game_id)
+        		VALUES ($1, $2)
+    		`, playerID, gameID)
+
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			err = playerGameRepo.AddGame(playerID, gameID)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			}
+			var count int
+
+			err = db.QueryRow(`
+				SELECT COUNT(*)
+				FROM player_games
+				WHERE player_id = $1
+				AND game_id = $2
+			`, playerID, gameID).Scan(&count)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tt.wantGame && count != 1 {
+				t.Errorf("game was not added")
+			}
+
+			if !tt.wantGame && count != 0 {
+				t.Errorf("game was added, but should not be")
+			}
+		})
+	}
+}
