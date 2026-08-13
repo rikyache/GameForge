@@ -155,3 +155,100 @@ func TestRemovePlayer(t *testing.T) {
 		})
 	}
 }
+
+func TestGetPlayer(t *testing.T) {
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err = db.Ping(); err != nil {
+		t.Fatal(err)
+	}
+
+	playerRepo := NewPlayerRepository(db)
+
+	tests := []struct {
+		name       string
+		wantErr    bool
+		wantPlayer bool
+	}{
+		{
+			name:       "get existing player",
+			wantErr:    false,
+			wantPlayer: true,
+		},
+		{
+			name:       "get non existing player",
+			wantErr:    true,
+			wantPlayer: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			var playerID int64
+
+			if tt.wantPlayer {
+				err := db.QueryRow(`
+					INSERT INTO players (name, balance)
+					VALUES ($1, $2)
+					RETURNING id
+				`, "Tester", 1000).Scan(&playerID)
+
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				playerID = 999999
+			}
+
+			player, err := playerRepo.GetPlayer(playerID)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetPlayer() error = %v, wantErr = %v", err, tt.wantErr)
+			}
+
+			if (player != nil) != tt.wantPlayer {
+				t.Errorf("GetPlayer() player = %v, wantPlayer = %v", player, tt.wantPlayer)
+			}
+		})
+	}
+}
+
+func TestListPlayers(t *testing.T) {
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err = db.Ping(); err != nil {
+		t.Fatal(err)
+	}
+
+	playerRepo := NewPlayerRepository(db)
+
+	t.Run("list existing players", func(t *testing.T) {
+		_, err := db.Exec(`
+			INSERT INTO players (name, balance)
+			VALUES ($1, $2)
+		`, "ListTestPlayer", 1000)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		players, err := playerRepo.ListPlayers()
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(players) == 0 {
+			t.Fatal("expected players, got empty list")
+		}
+	})
+}

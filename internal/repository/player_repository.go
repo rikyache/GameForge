@@ -28,9 +28,10 @@ func (r *PlayerRepository) AddPlayer(name string) error {
 
 func (r *PlayerRepository) GetPlayer(id int64) (*models.Player, error) {
 	query := `
-	SELECT id, name, balance, created_at FROM players
-	WHERE id = $1
-`
+		SELECT id, name, balance, created_at
+		FROM players
+		WHERE id = $1
+	`
 
 	var player models.Player
 
@@ -41,8 +42,11 @@ func (r *PlayerRepository) GetPlayer(id int64) (*models.Player, error) {
 		&player.CreatedAt,
 	)
 
-	return &player, err
+	if err != nil {
+		return nil, err
+	}
 
+	return &player, nil
 }
 
 func (r *PlayerRepository) ListPlayers() ([]models.Player, error) {
