@@ -465,3 +465,94 @@ func TestAddGame(t *testing.T) {
 		})
 	}
 }
+
+func TestExists(t *testing.T) {
+	db, err := sql.Open(
+		"postgres",
+		"host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		t.Fatal(err)
+	}
+
+	playerGameRepo := NewPlayerGameRepository(db, nil, nil)
+
+	tests := []struct {
+		name      string
+		gameAdded bool
+		want      bool
+	}{
+		{
+			name:      "game exists",
+			gameAdded: true,
+			want:      true,
+		},
+		{
+			name:      "game does not exist",
+			gameAdded: false,
+			want:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Arrange
+
+			var playerID int64
+
+			err := db.QueryRow(`
+				INSERT INTO players (name, balance)
+				VALUES ($1, $2)
+				RETURNING id
+			`, "Tester", 1000).Scan(&playerID)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var gameID int64
+
+			err = db.QueryRow(`
+				INSERT INTO games (name, genre, price)
+				VALUES ($1, $2, $3)
+				RETURNING id
+			`, "TestGame", "TestGenre", 100).Scan(&gameID)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Если по условию игра должна существовать
+			if tt.gameAdded {
+				_, err = db.Exec(`
+					INSERT INTO player_games (player_id, game_id)
+					VALUES ($1, $2)
+				`, playerID, gameID)
+
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			// Act
+
+			exists, err := playerGameRepo.Exists(playerID, gameID)
+
+			// Assert
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if exists != tt.want {
+				t.Errorf("exists = %v, want %v", exists, tt.want)
+			}
+		})
+	}
+}
