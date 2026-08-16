@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,67 +20,84 @@ func NewPlayerHandler(service *service.PlayerService) *PlayerHandler {
 }
 
 func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request) {
-	//получение чистого id
 	idStr := strings.TrimPrefix(r.URL.Path, "/player/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
 
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("failed to parse id: %v", err)
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		http.Error(w, "invalid player id", http.StatusBadRequest)
 		return
 	}
 
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
 		player, err := h.Service.GetPlayer(id)
 		if err != nil {
-			log.Printf("failed to get player: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			handleError(w, err)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(player)
 
-	case "DELETE":
+		if err := json.NewEncoder(w).Encode(player); err != nil {
+			handleError(w, err)
+			return
+		}
+
+	case http.MethodDelete:
 		err := h.Service.RemovePlayer(id)
 		if err != nil {
-			log.Printf("failed to remove player: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			handleError(w, err)
+			return
 		}
+
+		w.WriteHeader(http.StatusNoContent)
+
 	default:
-		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
-		return
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
 func (h *PlayerHandler) ListPlayers(w http.ResponseWriter, r *http.Request) {
-	var player []models.Player
-	player, err := h.Service.ListPlayers()
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	players, err := h.Service.ListPlayers()
 	if err != nil {
-		log.Printf("failed to list players: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(player)
+
+	if err := json.NewEncoder(w).Encode(players); err != nil {
+		handleError(w, err)
+		return
+	}
 }
 
 func (h *PlayerHandler) AddPlayer(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
-	}
-
-	var player *models.Player
-
-	err := json.NewDecoder(r.Body).Decode(&player)
-	if err != nil {
-		log.Printf("failed to parse body: %v", err)
-		http.Error(w, "invalid request", http.StatusBadRequest)
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	err = h.Service.AddPlayer(*player)
+	defer r.Body.Close()
+
+	var player models.Player
+
+	err := json.NewDecoder(r.Body).Decode(&player)
+	if err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err = h.Service.AddPlayer(player)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,84 +20,85 @@ func NewGameHandler(service *service.GameService) *GameHandler {
 }
 
 func (h *GameHandler) ListGames(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	game, err := h.Service.ListGames()
-
+	games, err := h.Service.ListGames()
 	if err != nil {
-		log.Printf("failed to list games:%v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(game)
+
+	if err := json.NewEncoder(w).Encode(games); err != nil {
+		handleError(w, err)
+		return
+	}
 }
 
 func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/game/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
 
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("failed to parse id: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "invalid game id", http.StatusBadRequest)
 		return
 	}
 
 	switch r.Method {
 
 	case http.MethodGet:
-
 		game, err := h.Service.GetGame(id)
 		if err != nil {
-			log.Printf("failed to get game:%v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			handleError(w, err)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 
-		err = json.NewEncoder(w).Encode(game)
-		if err != nil {
-			log.Printf("failed to write response: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err := json.NewEncoder(w).Encode(game); err != nil {
+			handleError(w, err)
 			return
 		}
 
 	case http.MethodDelete:
-
-		err = h.Service.DeleteGame(id)
+		err := h.Service.DeleteGame(id)
 		if err != nil {
-			log.Printf("failed to delete game:%v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			handleError(w, err)
 			return
 		}
 
 		w.WriteHeader(http.StatusNoContent)
 
 	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
 func (h *GameHandler) AddGame(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var game *models.Game
+	defer r.Body.Close()
+
+	var game models.Game
 
 	err := json.NewDecoder(r.Body).Decode(&game)
 	if err != nil {
-		log.Printf("failed to parse body: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	err = h.Service.AddGame(*game)
+	err = h.Service.AddGame(game)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 }
