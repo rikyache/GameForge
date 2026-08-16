@@ -6,7 +6,7 @@ import (
 )
 
 func TestAddPlayer(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable")
 	if err != nil {
 		t.Error(err)
 	}
@@ -67,7 +67,7 @@ func TestAddPlayer(t *testing.T) {
 }
 
 func TestRemovePlayer(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable")
 	if err != nil {
 		t.Error(err)
 	}
@@ -157,7 +157,7 @@ func TestRemovePlayer(t *testing.T) {
 }
 
 func TestGetPlayer(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +219,7 @@ func TestGetPlayer(t *testing.T) {
 }
 
 func TestListPlayers(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}

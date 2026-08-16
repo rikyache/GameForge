@@ -6,7 +6,7 @@ import (
 )
 
 func TestGetGame(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestGetGame(t *testing.T) {
 }
 
 func TestListGames(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice sslmode=disable")
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}

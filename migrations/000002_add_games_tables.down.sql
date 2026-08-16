@@ -1,3 +1,1 @@
-DROP TABLE IF EXISTS player_games;
-
 DROP TABLE IF EXISTS games;
