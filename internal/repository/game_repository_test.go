@@ -1,23 +1,10 @@
 package repository
 
 import (
-	"database/sql"
 	"testing"
 )
 
 func TestGetGame(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-
-	gameRepo := NewGameRepository(db)
-
 	tests := []struct {
 		name     string
 		wantErr  bool
@@ -37,6 +24,10 @@ func TestGetGame(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+
+			gameRepo := NewGameRepository(db)
+
 			var gameID int64
 
 			if tt.wantGame {
@@ -56,24 +47,42 @@ func TestGetGame(t *testing.T) {
 			game, err := gameRepo.GetGame(gameID)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetGame() error = %v, wantErr = %v", err, tt.wantErr)
+				t.Errorf(
+					"GetGame() error = %v, wantErr = %v",
+					err,
+					tt.wantErr,
+				)
 			}
 
 			if (game != nil) != tt.wantGame {
-				t.Errorf("GetGame() game = %v, wantGame = %v", game, tt.wantGame)
+				t.Errorf(
+					"GetGame() game = %v, wantGame = %v",
+					game,
+					tt.wantGame,
+				)
 			}
 
 			if tt.wantGame {
 				if game.ID != gameID {
-					t.Errorf("GetGame() ID = %v, want %v", game.ID, gameID)
+					t.Errorf(
+						"GetGame() ID = %v, want %v",
+						game.ID,
+						gameID,
+					)
 				}
 
 				if game.Name != "Minecraft" {
-					t.Errorf("GetGame() Name = %v, want Minecraft", game.Name)
+					t.Errorf(
+						"GetGame() Name = %v, want Minecraft",
+						game.Name,
+					)
 				}
 
 				if game.Genre != "Sandbox" {
-					t.Errorf("GetGame() Genre = %v, want Sandbox", game.Genre)
+					t.Errorf(
+						"GetGame() Genre = %v, want Sandbox",
+						game.Genre,
+					)
 				}
 			}
 		})
@@ -81,18 +90,6 @@ func TestGetGame(t *testing.T) {
 }
 
 func TestListGames(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-
-	gameRepo := NewGameRepository(db)
-
 	tests := []struct {
 		name       string
 		createGame bool
@@ -112,10 +109,9 @@ func TestListGames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := db.Exec("DELETE FROM games")
-			if err != nil {
-				t.Fatal(err)
-			}
+			db := setupTestDB(t)
+
+			gameRepo := NewGameRepository(db)
 
 			if tt.createGame {
 				_, err := db.Exec(`
@@ -144,11 +140,17 @@ func TestListGames(t *testing.T) {
 
 			if tt.createGame {
 				if games[0].Name != "Minecraft" {
-					t.Errorf("Name = %v, want Minecraft", games[0].Name)
+					t.Errorf(
+						"Name = %v, want Minecraft",
+						games[0].Name,
+					)
 				}
 
 				if games[0].Genre != "Sandbox" {
-					t.Errorf("Genre = %v, want Sandbox", games[0].Genre)
+					t.Errorf(
+						"Genre = %v, want Sandbox",
+						games[0].Genre,
+					)
 				}
 			}
 		})

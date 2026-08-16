@@ -5,15 +5,42 @@ import (
 	"testing"
 )
 
-func TestAddPlayer(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable")
+func setupTestDB(t *testing.T) *sql.DB {
+	t.Helper()
+
+	db, err := sql.Open(
+		"postgres",
+		"host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable",
+	)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	defer db.Close()
+
 	if err = db.Ping(); err != nil {
-		t.Error(err)
+		db.Close()
+		t.Fatal(err)
 	}
+
+	t.Cleanup(func() {
+		_, err := db.Exec(`
+			TRUNCATE TABLE player_games, players, games
+			RESTART IDENTITY CASCADE
+		`)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		db.Close()
+	})
+
+	return db
+}
+
+func TestAddPlayer(t *testing.T) {
+	db := setupTestDB(t)
+
+	playerRepo := NewPlayerRepository(db)
+
 	tests := []struct {
 		name       string
 		playerName string
@@ -30,8 +57,6 @@ func TestAddPlayer(t *testing.T) {
 			wantErr:    false,
 		},
 	}
-
-	playerRepo := NewPlayerRepository(db)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -67,14 +92,9 @@ func TestAddPlayer(t *testing.T) {
 }
 
 func TestRemovePlayer(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable")
-	if err != nil {
-		t.Error(err)
-	}
-	defer db.Close()
-	if err = db.Ping(); err != nil {
-		t.Error(err)
-	}
+	db := setupTestDB(t)
+
+	playerRepo := NewPlayerRepository(db)
 
 	tests := []struct {
 		name        string
@@ -95,8 +115,6 @@ func TestRemovePlayer(t *testing.T) {
 			wantPlayer:  false,
 		},
 	}
-
-	playerRepo := NewPlayerRepository(db)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -157,15 +175,7 @@ func TestRemovePlayer(t *testing.T) {
 }
 
 func TestGetPlayer(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Fatal(err)
-	}
+	db := setupTestDB(t)
 
 	playerRepo := NewPlayerRepository(db)
 
@@ -208,30 +218,31 @@ func TestGetPlayer(t *testing.T) {
 			player, err := playerRepo.GetPlayer(playerID)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPlayer() error = %v, wantErr = %v", err, tt.wantErr)
+				t.Errorf(
+					"GetPlayer() error = %v, wantErr = %v",
+					err,
+					tt.wantErr,
+				)
 			}
 
 			if (player != nil) != tt.wantPlayer {
-				t.Errorf("GetPlayer() player = %v, wantPlayer = %v", player, tt.wantPlayer)
+				t.Errorf(
+					"GetPlayer() player = %v, wantPlayer = %v",
+					player,
+					tt.wantPlayer,
+				)
 			}
 		})
 	}
 }
 
 func TestListPlayers(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Fatal(err)
-	}
+	db := setupTestDB(t)
 
 	playerRepo := NewPlayerRepository(db)
 
 	t.Run("list existing players", func(t *testing.T) {
+
 		_, err := db.Exec(`
 			INSERT INTO players (name, balance)
 			VALUES ($1, $2)

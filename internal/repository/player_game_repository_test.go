@@ -1,35 +1,12 @@
 package repository
 
 import (
-	"database/sql"
 	"testing"
 
 	_ "github.com/lib/pq"
 )
 
 func TestBuyGame(t *testing.T) {
-	db, err := sql.Open(
-		"postgres",
-		"host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable",
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-
-	playerRepo := NewPlayerRepository(db)
-	gameRepo := NewGameRepository(db)
-
-	playerGameRepo := NewPlayerGameRepository(
-		db,
-		playerRepo,
-		gameRepo,
-	)
-
 	tests := []struct {
 		name          string
 		playerBalance int
@@ -100,15 +77,27 @@ func TestBuyGame(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+
+			playerRepo := NewPlayerRepository(db)
+			gameRepo := NewGameRepository(db)
+
+			playerGameRepo := NewPlayerGameRepository(
+				db,
+				playerRepo,
+				gameRepo,
+			)
+
+			// Arrange
 
 			var playerID int64
 
 			if tt.playerExists {
 				err := db.QueryRow(`
-                INSERT INTO players (name, balance)
-                VALUES ($1, $2)
-                RETURNING id
-            `, "TestPlayer", tt.playerBalance).Scan(&playerID)
+					INSERT INTO players (name, balance)
+					VALUES ($1, $2)
+					RETURNING id
+				`, "TestPlayer", tt.playerBalance).Scan(&playerID)
 
 				if err != nil {
 					t.Fatal(err)
@@ -118,12 +107,13 @@ func TestBuyGame(t *testing.T) {
 			}
 
 			var gameID int64
+
 			if tt.gameExists {
-				err = db.QueryRow(`
-                INSERT INTO games (name, genre, price)
-                VALUES ($1, $2, $3)
-                RETURNING id
-            `, "TestGame", "test", tt.gamePrice).Scan(&gameID)
+				err := db.QueryRow(`
+					INSERT INTO games (name, genre, price)
+					VALUES ($1, $2, $3)
+					RETURNING id
+				`, "TestGame", "test", tt.gamePrice).Scan(&gameID)
 
 				if err != nil {
 					t.Fatal(err)
@@ -132,7 +122,11 @@ func TestBuyGame(t *testing.T) {
 				gameID = 9999999
 			}
 
-			err = playerGameRepo.BuyGame(playerID, gameID)
+			// Act
+
+			err := playerGameRepo.BuyGame(playerID, gameID)
+
+			// Assert: error
 
 			if tt.wantErr {
 				if err == nil {
@@ -143,14 +137,17 @@ func TestBuyGame(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			}
+
+			// Assert: balance
+
 			if tt.checkBalance {
 				var balance int
 
 				err = db.QueryRow(`
-                SELECT balance
-                FROM players
-                WHERE id = $1
-            `, playerID).Scan(&balance)
+					SELECT balance
+					FROM players
+					WHERE id = $1
+				`, playerID).Scan(&balance)
 
 				if err != nil {
 					t.Fatal(err)
@@ -164,6 +161,9 @@ func TestBuyGame(t *testing.T) {
 					)
 				}
 			}
+
+			// Assert: game ownership
+
 			var count int
 
 			err = db.QueryRow(`
@@ -178,8 +178,9 @@ func TestBuyGame(t *testing.T) {
 			}
 
 			if tt.wantGame && count != 1 {
-				t.Errorf("game wsa not added to player_games")
+				t.Errorf("game was not added to player_games")
 			}
+
 			if !tt.wantGame && count != 0 {
 				t.Errorf("game was added to player_games, but should not be")
 			}
@@ -188,20 +189,6 @@ func TestBuyGame(t *testing.T) {
 }
 
 func TestGetPlayerGames(t *testing.T) {
-	db, err := sql.Open(
-		"postgres",
-		"host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable",
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	if err := db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-
-	playerGameRepo := NewPlayerGameRepository(db, nil, nil)
-
 	tests := []struct {
 		name      string
 		gameCount int
@@ -223,9 +210,15 @@ func TestGetPlayerGames(t *testing.T) {
 			wantCount: 0,
 		},
 	}
-	//arrange
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+
+			playerGameRepo := NewPlayerGameRepository(db, nil, nil)
+
+			// Arrange
+
 			var playerID int64
 
 			err := db.QueryRow(`
@@ -245,50 +238,44 @@ func TestGetPlayerGames(t *testing.T) {
 					INSERT INTO games (name, genre, price)
 					VALUES ($1, $2, $3)
 					RETURNING id
-			`, "TestGame", "Test", 500).Scan(&gameID)
+				`, "TestGame", "Test", 500).Scan(&gameID)
 
 				if err != nil {
 					t.Fatal(err)
 				}
 
 				_, err = db.Exec(`
-        			INSERT INTO player_games (player_id, game_id)
-        			VALUES ($1, $2)
-    		`, playerID, gameID)
+					INSERT INTO player_games (player_id, game_id)
+					VALUES ($1, $2)
+				`, playerID, gameID)
 
 				if err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			// Act
+
 			games, err := playerGameRepo.GetPlayerGames(playerID)
+
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// Assert
+
 			if len(games) != tt.wantCount {
-				t.Errorf("got %d games, want%d", len(games), tt.wantCount)
+				t.Errorf(
+					"got %d games, want %d",
+					len(games),
+					tt.wantCount,
+				)
 			}
 		})
 	}
 }
 
 func TestRemoveGame(t *testing.T) {
-	db, err := sql.Open(
-		"postgres",
-		"host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable",
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	if err := db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-
-	playerGameRepo := NewPlayerGameRepository(db, nil, nil)
-
 	tests := []struct {
 		name       string
 		gameExists bool
@@ -308,9 +295,15 @@ func TestRemoveGame(t *testing.T) {
 			wantGame:   false,
 		},
 	}
-	//arrange
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+
+			playerGameRepo := NewPlayerGameRepository(db, nil, nil)
+
+			// Arrange
+
 			var playerID int64
 
 			err := db.QueryRow(`
@@ -326,24 +319,31 @@ func TestRemoveGame(t *testing.T) {
 			var gameID int64
 
 			err = db.QueryRow(`
-                 INSERT INTO games (name, genre, price)
-                 VALUES ($1, $2, $3)
-                 RETURNING id
+				INSERT INTO games (name, genre, price)
+				VALUES ($1, $2, $3)
+				RETURNING id
 			`, "TestGame", "Test", 100).Scan(&gameID)
 
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if tt.gameExists {
 				_, err = db.Exec(`
-				INSERT INTO player_games (player_id, game_id)
-    			VALUES ($1, $2)`, playerID, gameID)
+					INSERT INTO player_games (player_id, game_id)
+					VALUES ($1, $2)
+				`, playerID, gameID)
 
 				if err != nil {
 					t.Fatal(err)
 				}
 			}
+
+			// Act
+
 			err = playerGameRepo.RemoveGame(playerID, gameID)
+
+			// Assert: error
 
 			if tt.wantErr {
 				if err == nil {
@@ -355,18 +355,21 @@ func TestRemoveGame(t *testing.T) {
 				}
 			}
 
+			// Assert: game exists
+
 			var count int
 
 			err = db.QueryRow(`
-    			SELECT COUNT(*)
-    			FROM player_games
-    			WHERE player_id = $1
-    			AND game_id = $2
+				SELECT COUNT(*)
+				FROM player_games
+				WHERE player_id = $1
+				AND game_id = $2
 			`, playerID, gameID).Scan(&count)
 
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if count != 0 {
 				t.Errorf("game was not removed")
 			}
@@ -375,16 +378,6 @@ func TestRemoveGame(t *testing.T) {
 }
 
 func TestAddGame(t *testing.T) {
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	if err := db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-	playerGameRepo := NewPlayerGameRepository(db, nil, nil)
-
 	tests := []struct {
 		name     string
 		wantErr  bool
@@ -404,35 +397,53 @@ func TestAddGame(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+
+			playerGameRepo := NewPlayerGameRepository(db, nil, nil)
+
+			// Arrange
+
 			var playerID int64
+
 			err := db.QueryRow(`
-                INSERT INTO players (name, balance)
-                VALUES ($1, $2)
-                RETURNING id`, "Tester", 1000).Scan(&playerID)
+				INSERT INTO players (name, balance)
+				VALUES ($1, $2)
+				RETURNING id
+			`, "Tester", 1000).Scan(&playerID)
+
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			var gameID int64
+
 			err = db.QueryRow(`
-                INSERT INTO games (name, genre, price)
-                VALUES ($1, $2, $3)
-                RETURNING id`, "TestGame", "TestGenre", 100).Scan(&gameID)
+				INSERT INTO games (name, genre, price)
+				VALUES ($1, $2, $3)
+				RETURNING id
+			`, "TestGame", "TestGenre", 100).Scan(&gameID)
+
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			if tt.wantErr {
 				_, err = db.Exec(`
-        		INSERT INTO player_games (player_id, game_id)
-        		VALUES ($1, $2)
-    		`, playerID, gameID)
+					INSERT INTO player_games (player_id, game_id)
+					VALUES ($1, $2)
+				`, playerID, gameID)
 
 				if err != nil {
 					t.Fatal(err)
 				}
 			}
+
+			// Act
+
 			err = playerGameRepo.AddGame(playerID, gameID)
+
+			// Assert: error
+
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
@@ -442,6 +453,9 @@ func TestAddGame(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			}
+
+			// Assert: game exists
+
 			var count int
 
 			err = db.QueryRow(`
@@ -467,21 +481,6 @@ func TestAddGame(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
-	db, err := sql.Open(
-		"postgres",
-		"host=localhost port=5432 user=kirill password=12345 dbname==practice_test sslmode=disable",
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		t.Fatal(err)
-	}
-
-	playerGameRepo := NewPlayerGameRepository(db, nil, nil)
-
 	tests := []struct {
 		name      string
 		gameAdded bool
@@ -501,6 +500,9 @@ func TestExists(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+
+			playerGameRepo := NewPlayerGameRepository(db, nil, nil)
 
 			// Arrange
 
