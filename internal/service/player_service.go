@@ -3,14 +3,20 @@ package service
 import (
 	"testsmth/internal/apperrors"
 	"testsmth/internal/models"
-	"testsmth/internal/repository"
 )
 
 type PlayerService struct {
-	repo *repository.PlayerRepository
+	repo PlayerRepository
 }
 
-func NewPlayerService(repo *repository.PlayerRepository) *PlayerService {
+type PlayerRepository interface {
+	GetPlayer(id int64) (*models.Player, error)
+	AddPlayer(name string) error
+	RemovePlayer(id int64) error
+	ListPlayers() ([]models.Player, error)
+}
+
+func NewPlayerService(repo PlayerRepository) *PlayerService {
 	return &PlayerService{
 		repo: repo,
 	}

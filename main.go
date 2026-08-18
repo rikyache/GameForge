@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"testsmth/internal/cache"
 	"testsmth/internal/database"
 	"testsmth/internal/handlers"
 	"testsmth/internal/middleware"
@@ -21,9 +22,14 @@ func main() {
 	if err != nil {
 		log.Println("No .env file found")
 	}
-
+	//Подключаемся к postgresql
 	db := database.Connect()
 	defer db.Close()
+	//Подключаемся к RedisClient
+	redisClient := cache.Connect()
+	defer redisClient.Close()
+
+	redisCache := cache.NewRedisCache(redisClient)
 
 	//base url
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +37,8 @@ func main() {
 	})
 
 	playerRepo := repository.NewPlayerRepository(db)
-	playerService := service.NewPlayerService(playerRepo)
+	cachedPlayerRepo := repository.NewCachedPlayerRepository(playerRepo, redisCache)
+	playerService := service.NewPlayerService(cachedPlayerRepo)
 	playerHandler := handlers.NewPlayerHandler(playerService)
 
 	gameRepo := repository.NewGameRepository(db)
