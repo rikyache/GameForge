@@ -70,3 +70,7 @@ func (r *CachedPlayerRepository) RemovePlayer(id int64) error {
 func (r *CachedPlayerRepository) ListPlayers() ([]models.Player, error) {
 	return r.repo.ListPlayers()
 }
+
+func (r *CachedPlayerRepository) Deposit(playerID int64, amount int) error {
+	return r.repo.Deposit(playerID, amount)
+}

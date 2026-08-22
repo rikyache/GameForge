@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"testsmth/internal/apperrors"
 	"testsmth/internal/models"
 )
 
@@ -119,4 +120,29 @@ func (r *PlayerRepository) UpdateBalance(tx *sql.Tx, playerID int64, balance int
 	`, balance, playerID)
 
 	return err
+}
+
+func (r *PlayerRepository) Deposit(playerID int64, amount int) error {
+	query := `
+    UPDATE players
+    SET balance = balance + $1
+    WHERE id = $2
+    RETURNING id, balance;
+`
+
+	result, err := r.DB.Exec(query, amount, playerID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return apperrors.ErrPlayerNotFound
+	}
+
+	return nil
 }

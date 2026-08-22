@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 	"testsmth/internal/models"
 	"testsmth/internal/service"
 )
@@ -20,7 +19,7 @@ func NewPlayerHandler(service *service.PlayerService) *PlayerHandler {
 }
 
 func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/player/")
+	idStr := r.PathValue("id")
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -100,4 +99,35 @@ func (h *PlayerHandler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *PlayerHandler) Deposit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	defer r.Body.Close()
+
+	var amount models.DepositRequest
+
+	err := json.NewDecoder(r.Body).Decode(&amount)
+	if err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	money := amount.Amount
+	idStr := r.PathValue("id")
+
+	playerID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid player id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.Service.Deposit(playerID, money)
+	if err != nil {
+		handleError(w, err)
+	}
+	return
 }

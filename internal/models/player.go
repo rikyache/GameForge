@@ -8,3 +8,7 @@ type Player struct {
 	Balance   int       `db:"balance"	json:"balance"`
 	CreatedAt time.Time `db:"created_at"	json:"created_at"`
 }
+
+type DepositRequest struct {
+	Amount int `json:"amount"`
+}

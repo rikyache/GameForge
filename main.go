@@ -32,9 +32,6 @@ func main() {
 	redisCache := cache.NewRedisCache(redisClient)
 
 	//base url
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello Docker")
-	})
 
 	playerRepo := repository.NewPlayerRepository(db)
 	cachedPlayerRepo := repository.NewCachedPlayerRepository(playerRepo, redisCache)
@@ -49,29 +46,38 @@ func main() {
 	playerGamesService := service.NewPlayerGamesService(playerGamesRepo)
 	playerGamesHandler := handlers.NewPlayerGamesHandler(playerGamesService)
 
-	//игроки
-	http.HandleFunc("/player/", playerHandler.GetOrDeletePlayer)
-	http.HandleFunc("/players", playerHandler.ListPlayers)
-	http.HandleFunc("/players/add", playerHandler.AddPlayer)
-	//игры
-	http.HandleFunc("/games", gameHandler.ListGames)
-	http.HandleFunc("/game/", gameHandler.GetOrDeleteGame)
-	http.HandleFunc("/games/add", gameHandler.AddGame)
-	//связь игры-игроки
-	http.HandleFunc("/players/games", playerGamesHandler.AddGame)
+	mux := http.NewServeMux()
 
-	http.HandleFunc("/players/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			playerGamesHandler.GetPlayerGames(w, r)
-
-		case http.MethodDelete:
-			playerGamesHandler.RemoveGame(w, r)
-
-		default:
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		}
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello Docker")
 	})
 
-	http.ListenAndServe(":8080", middleware.Logger(http.DefaultServeMux))
+	//игроки
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello Docker")
+	})
+
+	// Players
+	mux.HandleFunc("GET /players", playerHandler.ListPlayers)
+	mux.HandleFunc("POST /players", playerHandler.AddPlayer)
+
+	mux.HandleFunc("GET /players/{id}", playerHandler.GetOrDeletePlayer)
+	mux.HandleFunc("DELETE /players/{id}", playerHandler.GetOrDeletePlayer)
+
+	// Player actions
+	mux.HandleFunc("POST /players/{id}/deposit", playerHandler.Deposit)
+
+	// Games
+	mux.HandleFunc("GET /games", gameHandler.ListGames)
+	mux.HandleFunc("POST /games", gameHandler.AddGame)
+
+	mux.HandleFunc("GET /games/{id}", gameHandler.GetOrDeleteGame)
+	mux.HandleFunc("DELETE /games/{id}", gameHandler.GetOrDeleteGame)
+
+	// Player-Games
+	mux.HandleFunc("POST /players/{id}/games", playerGamesHandler.AddGame)
+	mux.HandleFunc("GET /players/{id}/games", playerGamesHandler.GetPlayerGames)
+	mux.HandleFunc("DELETE /players/{id}/games", playerGamesHandler.RemoveGame)
+
+	http.ListenAndServe(":8080", middleware.Logger(mux))
 }

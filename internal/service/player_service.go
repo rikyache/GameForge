@@ -14,6 +14,7 @@ type PlayerRepository interface {
 	AddPlayer(name string) error
 	RemovePlayer(id int64) error
 	ListPlayers() ([]models.Player, error)
+	Deposit(playerID int64, amount int) error
 }
 
 func NewPlayerService(repo PlayerRepository) *PlayerService {
@@ -56,4 +57,14 @@ func (s *PlayerService) RemovePlayer(id int64) error {
 
 func (s *PlayerService) ListPlayers() ([]models.Player, error) {
 	return s.repo.ListPlayers()
+}
+
+func (s *PlayerService) Deposit(playerID int64, amount int) error {
+	if amount <= 0 {
+		return apperrors.ErrInvalidInput
+	}
+	if playerID <= 0 {
+		return apperrors.ErrInvalidInput
+	}
+	return s.repo.Deposit(playerID, amount)
 }
