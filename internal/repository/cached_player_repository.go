@@ -82,5 +82,5 @@ func (r *CachedPlayerRepository) Deposit(playerID int64, amount int) error {
 		return err
 	}
 
-	return r.repo.Deposit(playerID, amount)
+	return nil
 }

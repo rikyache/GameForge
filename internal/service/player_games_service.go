@@ -7,10 +7,12 @@ import (
 )
 
 type PlayerGamesService struct {
-	repo *repository.PlayerGameRepository
+	repo *repository.CachedPlayerGameRepository
 }
 
-func NewPlayerGamesService(repo *repository.PlayerGameRepository) *PlayerGamesService {
+func NewPlayerGamesService(
+	repo *repository.CachedPlayerGameRepository,
+) *PlayerGamesService {
 	return &PlayerGamesService{
 		repo: repo,
 	}

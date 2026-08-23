@@ -42,9 +42,24 @@ func main() {
 	gameService := service.NewGameService(gameRepo)
 	gameHandler := handlers.NewGameHandler(gameService)
 
-	playerGamesRepo := repository.NewPlayerGameRepository(db, playerRepo, gameRepo)
-	playerGamesService := service.NewPlayerGamesService(playerGamesRepo)
-	playerGamesHandler := handlers.NewPlayerGamesHandler(playerGamesService)
+	playerGamesRepo := repository.NewPlayerGameRepository(
+		db,
+		playerRepo,
+		gameRepo,
+	)
+
+	cachedPlayerGamesRepo := repository.NewCachedPlayerGameRepository(
+		playerGamesRepo,
+		redisCache,
+	)
+
+	playerGamesService := service.NewPlayerGamesService(
+		cachedPlayerGamesRepo,
+	)
+
+	playerGamesHandler := handlers.NewPlayerGamesHandler(
+		playerGamesService,
+	)
 
 	mux := http.NewServeMux()
 
