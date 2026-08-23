@@ -184,7 +184,10 @@ func (r *PlayerGameRepository) BuyGame(playerID int64, gameID int64) error {
 		return err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return err
 }
 
 func (r *PlayerGameRepository) Refund(playerID int64, gameID int64) error {

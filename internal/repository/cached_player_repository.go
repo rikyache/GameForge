@@ -72,5 +72,15 @@ func (r *CachedPlayerRepository) ListPlayers() ([]models.Player, error) {
 }
 
 func (r *CachedPlayerRepository) Deposit(playerID int64, amount int) error {
+	if err := r.repo.Deposit(playerID, amount); err != nil {
+		return err
+	}
+
+	key := fmt.Sprintf("player:%d", playerID)
+
+	if err := r.cache.Delete(context.Background(), key); err != nil {
+		return err
+	}
+
 	return r.repo.Deposit(playerID, amount)
 }
