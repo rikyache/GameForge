@@ -82,3 +82,31 @@ func (r *CachedPlayerGameRepository) GetPlayerGames(playerID int64) ([]models.Ow
 	}
 	return games, nil
 }
+
+func (r *CachedPlayerGameRepository) Refund(
+	playerID int64,
+	gameID int64,
+) error {
+
+	if err := r.repo.Refund(playerID, gameID); err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+
+	if err := r.cache.Delete(
+		ctx,
+		fmt.Sprintf("player:%d", playerID),
+	); err != nil {
+		return err
+	}
+
+	if err := r.cache.Delete(
+		ctx,
+		fmt.Sprintf("player_games:%d", playerID),
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
