@@ -128,6 +128,7 @@ func (h *PlayerHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 	err = h.Service.Deposit(playerID, money)
 	if err != nil {
 		handleError(w, err)
+		return
 	}
 	return
 }

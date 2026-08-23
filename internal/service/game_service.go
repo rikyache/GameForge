@@ -32,6 +32,7 @@ func (s *GameService) AddGame(game models.Game) error {
 	return s.repo.AddGame(
 		game.Name,
 		game.Genre,
+		game.Price,
 	)
 }
 

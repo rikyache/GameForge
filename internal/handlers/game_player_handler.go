@@ -109,3 +109,33 @@ func (h *PlayerGamesHandler) RemoveGame(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *PlayerGamesHandler) RefundGame(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	defer r.Body.Close()
+
+	playerIDstr := r.PathValue("playerID")
+	gameIDstr := r.PathValue("gameID")
+
+	playerID, err := strconv.ParseInt(playerIDstr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid player id", http.StatusBadRequest)
+		return
+	}
+	gameID, err := strconv.ParseInt(gameIDstr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid game id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.Service.Refund(playerID, gameID)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+}

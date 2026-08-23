@@ -15,13 +15,13 @@ func NewGameRepository(db *sql.DB) *GameRepository {
 	}
 }
 
-func (r *GameRepository) AddGame(name string, genre string) error {
+func (r *GameRepository) AddGame(name string, genre string, price int) error {
 	query := `
-	INSERT INTO games (name, genre)
-	VALUES ($1, $2);
+	INSERT INTO games (name, genre, price)
+	VALUES ($1, $2, $3);
 	`
 
-	_, err := r.DB.Exec(query, name, genre)
+	_, err := r.DB.Exec(query, name, genre, price)
 
 	return err
 }

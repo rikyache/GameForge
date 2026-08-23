@@ -47,3 +47,14 @@ func (s *PlayerGamesService) RemoveGame(playerID, gameID int64) error {
 
 	return s.repo.RemoveGame(playerID, gameID)
 }
+
+func (s *PlayerGamesService) Refund(playerID, gameID int64) error {
+	if playerID <= 0 {
+		return apperrors.ErrInvalidInput
+	}
+	if gameID <= 0 {
+		return apperrors.ErrInvalidInput
+	}
+
+	return s.repo.Refund(playerID, gameID)
+}

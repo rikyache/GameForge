@@ -59,8 +59,8 @@ func (r *CachedGameRepository) GetGame(id int64) (*models.Game, error) {
 
 }
 
-func (r *CachedGameRepository) AddGame(game, genre string) error {
-	return r.repo.AddGame(game, genre)
+func (r *CachedGameRepository) AddGame(game, genre string, price int) error {
+	return r.repo.AddGame(game, genre, price)
 }
 
 func (r *CachedGameRepository) RemoveGame(id int64) error {

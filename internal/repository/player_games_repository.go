@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"testsmth/internal/apperrors"
 	"testsmth/internal/models"
 )
 
@@ -179,6 +180,53 @@ func (r *PlayerGameRepository) BuyGame(playerID int64, gameID int64) error {
 	}
 
 	err = r.AddGameTx(tx, playerID, gameID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *PlayerGameRepository) Refund(playerID int64, gameID int64) error {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	var price int
+
+	err = tx.QueryRow(`
+		SELECT g.price
+		FROM player_games pg
+		JOIN games g ON g.id = pg.game_id
+		WHERE pg.player_id = $1
+		  AND pg.game_id = $2
+	`, playerID, gameID).Scan(&price)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return apperrors.ErrGameNotFound
+	}
+
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+		UPDATE players
+		SET balance = balance + $1
+		WHERE id = $2
+	`, price, playerID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+		DELETE FROM player_games
+		WHERE player_id = $1
+		  AND game_id = $2
+	`, playerID, gameID)
 	if err != nil {
 		return err
 	}

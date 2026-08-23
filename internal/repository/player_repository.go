@@ -127,7 +127,6 @@ func (r *PlayerRepository) Deposit(playerID int64, amount int) error {
     UPDATE players
     SET balance = balance + $1
     WHERE id = $2
-    RETURNING id, balance;
 `
 
 	result, err := r.DB.Exec(query, amount, playerID)

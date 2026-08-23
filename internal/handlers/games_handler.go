@@ -40,7 +40,7 @@ func (h *GameHandler) ListGames(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/game/")
+	idStr := strings.TrimPrefix(r.URL.Path, "/games/")
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {

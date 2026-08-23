@@ -9,6 +9,7 @@ import (
 
 func handleError(w http.ResponseWriter, err error) {
 	log.Printf("handler error: %v", err)
+
 	switch {
 	case errors.Is(err, apperrors.ErrInvalidInput):
 		http.Error(w, err.Error(), http.StatusBadRequest)
