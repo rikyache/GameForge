@@ -84,3 +84,7 @@ func (r *CachedPlayerRepository) Deposit(playerID int64, amount int) error {
 
 	return nil
 }
+
+func (r *CachedPlayerRepository) GetProfile(ctx context.Context, playerID int64) (*models.PlayerProfile, error) {
+	return r.repo.GetProfile(ctx, playerID)
+}

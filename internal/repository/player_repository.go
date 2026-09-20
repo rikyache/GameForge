@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"testsmth/internal/apperrors"
 	"testsmth/internal/models"
 )
@@ -144,4 +146,40 @@ func (r *PlayerRepository) Deposit(playerID int64, amount int) error {
 	}
 
 	return nil
+}
+
+func (r *PlayerRepository) GetProfile(ctx context.Context, playerID int64) (*models.PlayerProfile, error) {
+	query := `
+	SELECT
+		p.id,
+		p.name,
+        p.balance,
+        COUNT(pg.game_id),
+        COALESCE(SUM(g.price), 0)
+    FROM players p
+	LEFT JOIN player_games pg ON pg.player_id = p.id
+	LEFT JOIN games g ON g.id = pg.game_id
+	WHERE p.id = $1
+	GROUP BY p.id, p.name, p.balance
+`
+
+	var profile models.PlayerProfile
+
+	err := r.DB.QueryRowContext(ctx, query, playerID).Scan(
+		&profile.ID,
+		&profile.Name,
+		&profile.Balance,
+		&profile.GamesCount,
+		&profile.LibraryValue,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperrors.ErrPlayerNotFound
+		}
+
+		return nil, err
+	}
+
+	return &profile, nil
 }

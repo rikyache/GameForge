@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testsmth/internal/apperrors"
 	"testsmth/internal/models"
 )
@@ -15,6 +16,7 @@ type PlayerRepository interface {
 	RemovePlayer(id int64) error
 	ListPlayers() ([]models.Player, error)
 	Deposit(playerID int64, amount int) error
+	GetProfile(ctx context.Context, playerID int64) (*models.PlayerProfile, error)
 }
 
 func NewPlayerService(repo PlayerRepository) *PlayerService {
@@ -67,4 +69,11 @@ func (s *PlayerService) Deposit(playerID int64, amount int) error {
 		return apperrors.ErrInvalidInput
 	}
 	return s.repo.Deposit(playerID, amount)
+}
+
+func (s *PlayerService) GetProfile(ctx context.Context, playerID int64) (*models.PlayerProfile, error) {
+	if playerID <= 0 {
+		return nil, apperrors.ErrInvalidInput
+	}
+	return s.repo.GetProfile(ctx, playerID)
 }

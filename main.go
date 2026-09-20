@@ -81,6 +81,7 @@ func main() {
 
 	// Player actions
 	mux.HandleFunc("POST /players/{id}/deposit", playerHandler.Deposit)
+	mux.HandleFunc("GET /players/{id}/profile", playerHandler.PlayerProfile)
 
 	// Games
 	mux.HandleFunc("GET /games", gameHandler.ListGames)

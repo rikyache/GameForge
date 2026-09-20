@@ -132,3 +132,30 @@ func (h *PlayerHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 	}
 	return
 }
+
+func (h *PlayerHandler) PlayerProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.PathValue("id")
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid player id", http.StatusBadRequest)
+		return
+	}
+
+	profile, err := h.Service.GetProfile(r.Context(), id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(profile); err != nil {
+		return
+	}
+}
