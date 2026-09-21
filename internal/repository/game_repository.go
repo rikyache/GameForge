@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"testsmth/internal/models"
 )
@@ -15,7 +16,7 @@ func NewGameRepository(db *sql.DB) *GameRepository {
 	}
 }
 
-func (r *GameRepository) AddGame(name string, genre string, price int) error {
+func (r *GameRepository) AddGame(ctx context.Context, name string, genre string, price int) error {
 	query := `
 	INSERT INTO games (name, genre, price)
 	VALUES ($1, $2, $3);
@@ -26,7 +27,7 @@ func (r *GameRepository) AddGame(name string, genre string, price int) error {
 	return err
 }
 
-func (r *GameRepository) GetGame(id int64) (*models.Game, error) {
+func (r *GameRepository) GetGame(ctx context.Context, id int64) (*models.Game, error) {
 	query := `
 		SELECT id, name, genre, price
 		FROM games 
@@ -35,7 +36,7 @@ func (r *GameRepository) GetGame(id int64) (*models.Game, error) {
 
 	game := models.Game{}
 
-	err := r.DB.QueryRow(query, id).Scan(
+	err := r.DB.QueryRowContext(ctx, query, id).Scan(
 		&game.ID,
 		&game.Name,
 		&game.Genre,
@@ -49,13 +50,15 @@ func (r *GameRepository) GetGame(id int64) (*models.Game, error) {
 	return &game, nil
 }
 
-func (r *GameRepository) ListGames() ([]models.Game, error) {
+func (r *GameRepository) ListGames(ctx context.Context) ([]models.Game, error) {
 	query := `
     SELECT id, name, genre, price
     FROM games
 `
 	var games []models.Game
-	rows, err := r.DB.Query(query)
+
+	rows, err := r.DB.QueryContext(ctx, query)
+
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +88,12 @@ func (r *GameRepository) ListGames() ([]models.Game, error) {
 	return games, nil
 }
 
-func (r *GameRepository) RemoveGame(id int64) error {
+func (r *GameRepository) RemoveGame(ctx context.Context, id int64) error {
 	query := `
     DELETE FROM games
     WHERE id = $1
 `
-	_, err := r.DB.Exec(query, id)
+	_, err := r.DB.ExecContext(ctx, query, id)
 	return err
 }
 

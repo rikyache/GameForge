@@ -25,7 +25,9 @@ func (h *GameHandler) ListGames(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	games, err := h.Service.ListGames()
+	ctx := r.Context()
+
+	games, err := h.Service.ListGames(ctx)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -48,10 +50,12 @@ func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
+
 	switch r.Method {
 
 	case http.MethodGet:
-		game, err := h.Service.GetGame(id)
+		game, err := h.Service.GetGame(ctx, id)
 		if err != nil {
 			handleError(w, err)
 			return
@@ -65,7 +69,7 @@ func (h *GameHandler) GetOrDeleteGame(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case http.MethodDelete:
-		err := h.Service.DeleteGame(id)
+		err := h.Service.DeleteGame(ctx, id)
 		if err != nil {
 			handleError(w, err)
 			return
@@ -86,6 +90,8 @@ func (h *GameHandler) AddGame(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
+	ctx := r.Context()
+
 	var game models.Game
 
 	err := json.NewDecoder(r.Body).Decode(&game)
@@ -94,7 +100,7 @@ func (h *GameHandler) AddGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Service.AddGame(game)
+	err = h.Service.AddGame(ctx, game)
 	if err != nil {
 		handleError(w, err)
 		return

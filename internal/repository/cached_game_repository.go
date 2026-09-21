@@ -22,7 +22,7 @@ func NewCachedGameRepository(repo *GameRepository, cache cache.Cache) *CachedGam
 	}
 }
 
-func (r *CachedGameRepository) GetGame(id int64) (*models.Game, error) {
+func (r *CachedGameRepository) GetGame(ctx context.Context, id int64) (*models.Game, error) {
 	key := fmt.Sprintf("game:%d", id)
 
 	cached, err := r.cache.Get(context.Background(), key)
@@ -39,7 +39,7 @@ func (r *CachedGameRepository) GetGame(id int64) (*models.Game, error) {
 		log.Printf("cannot get game:%v", err)
 	}
 
-	game, err := r.repo.GetGame(id)
+	game, err := r.repo.GetGame(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -59,14 +59,14 @@ func (r *CachedGameRepository) GetGame(id int64) (*models.Game, error) {
 
 }
 
-func (r *CachedGameRepository) AddGame(game, genre string, price int) error {
-	return r.repo.AddGame(game, genre, price)
+func (r *CachedGameRepository) AddGame(ctx context.Context, game, genre string, price int) error {
+	return r.repo.AddGame(ctx, game, genre, price)
 }
 
-func (r *CachedGameRepository) RemoveGame(id int64) error {
-	return r.repo.RemoveGame(id)
+func (r *CachedGameRepository) RemoveGame(ctx context.Context, id int64) error {
+	return r.repo.RemoveGame(ctx, id)
 }
 
-func (r *CachedGameRepository) ListGames() ([]models.Game, error) {
-	return r.repo.ListGames()
+func (r *CachedGameRepository) ListGames(ctx context.Context) ([]models.Game, error) {
+	return r.repo.ListGames(ctx)
 }

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testsmth/internal/apperrors"
 	"testsmth/internal/models"
 	"testsmth/internal/repository"
@@ -16,7 +17,7 @@ func NewGameService(repo *repository.GameRepository) *GameService {
 	}
 }
 
-func (s *GameService) AddGame(game models.Game) error {
+func (s *GameService) AddGame(ctx context.Context, game models.Game) error {
 	if game.Name == "" {
 		return apperrors.ErrInvalidInput
 	}
@@ -29,29 +30,29 @@ func (s *GameService) AddGame(game models.Game) error {
 		return apperrors.ErrInvalidInput
 	}
 
-	return s.repo.AddGame(
+	return s.repo.AddGame(ctx,
 		game.Name,
 		game.Genre,
 		game.Price,
 	)
 }
 
-func (s *GameService) DeleteGame(id int64) error {
+func (s *GameService) DeleteGame(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return apperrors.ErrInvalidInput
 	}
 
-	return s.repo.RemoveGame(id)
+	return s.repo.RemoveGame(ctx, id)
 }
 
-func (s *GameService) GetGame(id int64) (*models.Game, error) {
+func (s *GameService) GetGame(ctx context.Context, id int64) (*models.Game, error) {
 	if id <= 0 {
 		return nil, apperrors.ErrInvalidInput
 	}
 
-	return s.repo.GetGame(id)
+	return s.repo.GetGame(ctx, id)
 }
 
-func (s *GameService) ListGames() ([]models.Game, error) {
-	return s.repo.ListGames()
+func (s *GameService) ListGames(ctx context.Context) ([]models.Game, error) {
+	return s.repo.ListGames(ctx)
 }
