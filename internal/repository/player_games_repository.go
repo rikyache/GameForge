@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"testsmth/internal/apperrors"
@@ -36,7 +37,7 @@ func (r *PlayerGameRepository) AddGame(playerID int64, gameID int64) error {
 	return err
 }
 
-func (r *PlayerGameRepository) GetPlayerGames(playerID int64) ([]models.OwnedGame, error) {
+func (r *PlayerGameRepository) GetPlayerGames(ctx context.Context, playerID int64) ([]models.OwnedGame, error) {
 
 	query := `
 	SELECT
@@ -52,7 +53,7 @@ func (r *PlayerGameRepository) GetPlayerGames(playerID int64) ([]models.OwnedGam
 	WHERE pg.player_id = $1
 	`
 
-	rows, err := r.DB.Query(query, playerID)
+	rows, err := r.DB.QueryContext(ctx, query, playerID)
 	if err != nil {
 		return nil, err
 	}
@@ -85,14 +86,14 @@ func (r *PlayerGameRepository) GetPlayerGames(playerID int64) ([]models.OwnedGam
 	return games, nil
 }
 
-func (r *PlayerGameRepository) RemoveGame(playerID int64, gameID int64) error {
+func (r *PlayerGameRepository) RemoveGame(ctx context.Context, playerID int64, gameID int64) error {
 	query := `
 	DELETE FROM player_games
     WHERE player_id = $1
 	AND game_id = $2
 `
 
-	result, err := r.DB.Exec(query, playerID, gameID)
+	result, err := r.DB.ExecContext(ctx, query, playerID, gameID)
 
 	rows, err := result.RowsAffected()
 	if err != nil {
@@ -121,10 +122,10 @@ func (r *PlayerGameRepository) Exists(playerID int64, gameID int64) (bool, error
 	return exists, err
 }
 
-func (r *PlayerGameRepository) ExistsTx(tx *sql.Tx, playerID int64, gameID int64) (bool, error) {
+func (r *PlayerGameRepository) ExistsTx(ctx context.Context, tx *sql.Tx, playerID int64, gameID int64) (bool, error) {
 	var exists bool
 
-	err := tx.QueryRow(`
+	err := tx.QueryRowContext(ctx, `
 		SELECT EXISTS (
 		    SELECT 1
 		    FROM player_games
@@ -136,8 +137,8 @@ func (r *PlayerGameRepository) ExistsTx(tx *sql.Tx, playerID int64, gameID int64
 	return exists, err
 }
 
-func (r *PlayerGameRepository) AddGameTx(tx *sql.Tx, playerID int64, gameID int64) error {
-	_, err := tx.Exec(`
+func (r *PlayerGameRepository) AddGameTx(ctx context.Context, tx *sql.Tx, playerID int64, gameID int64) error {
+	_, err := tx.ExecContext(ctx, `
 		INSERT INTO player_games(player_id, game_id)
 		VALUES ($1, $2)
 	`, playerID, gameID)
@@ -145,19 +146,19 @@ func (r *PlayerGameRepository) AddGameTx(tx *sql.Tx, playerID int64, gameID int6
 	return err
 }
 
-func (r *PlayerGameRepository) BuyGame(playerID int64, gameID int64) error {
-	tx, err := r.DB.Begin()
+func (r *PlayerGameRepository) BuyGame(ctx context.Context, playerID int64, gameID int64) error {
+	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	balance, err := r.PlayerRepo.GetBalance(tx, playerID)
+	balance, err := r.PlayerRepo.GetBalance(ctx, tx, playerID)
 	if err != nil {
 		return err
 	}
 
-	price, err := r.GameRepo.GetPrice(tx, gameID)
+	price, err := r.GameRepo.GetPrice(ctx, tx, gameID)
 	if err != nil {
 		return err
 	}
@@ -166,7 +167,7 @@ func (r *PlayerGameRepository) BuyGame(playerID int64, gameID int64) error {
 		return errors.New("not enough balance to buy")
 	}
 
-	exists, err := r.ExistsTx(tx, playerID, gameID)
+	exists, err := r.ExistsTx(ctx, tx, playerID, gameID)
 	if err != nil {
 		return err
 	}
@@ -174,12 +175,12 @@ func (r *PlayerGameRepository) BuyGame(playerID int64, gameID int64) error {
 		return errors.New("game already owned")
 	}
 
-	err = r.PlayerRepo.UpdateBalance(tx, playerID, balance-price)
+	err = r.PlayerRepo.UpdateBalance(ctx, tx, playerID, balance-price)
 	if err != nil {
 		return err
 	}
 
-	err = r.AddGameTx(tx, playerID, gameID)
+	err = r.AddGameTx(ctx, tx, playerID, gameID)
 	if err != nil {
 		return err
 	}
@@ -190,7 +191,7 @@ func (r *PlayerGameRepository) BuyGame(playerID int64, gameID int64) error {
 	return err
 }
 
-func (r *PlayerGameRepository) Refund(playerID int64, gameID int64) error {
+func (r *PlayerGameRepository) Refund(ctx context.Context, playerID int64, gameID int64) error {
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return err
@@ -200,7 +201,7 @@ func (r *PlayerGameRepository) Refund(playerID int64, gameID int64) error {
 
 	var price int
 
-	err = tx.QueryRow(`
+	err = tx.QueryRowContext(ctx, `
 		SELECT g.price
 		FROM player_games pg
 		JOIN games g ON g.id = pg.game_id
@@ -216,7 +217,7 @@ func (r *PlayerGameRepository) Refund(playerID int64, gameID int64) error {
 		return err
 	}
 
-	_, err = tx.Exec(`
+	_, err = tx.ExecContext(ctx, `
 		UPDATE players
 		SET balance = balance + $1
 		WHERE id = $2

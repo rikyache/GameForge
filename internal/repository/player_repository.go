@@ -102,10 +102,10 @@ func (r *PlayerRepository) RemovePlayer(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *PlayerRepository) GetBalance(tx *sql.Tx, playerID int64) (int, error) {
+func (r *PlayerRepository) GetBalance(ctx context.Context, tx *sql.Tx, playerID int64) (int, error) {
 	var balance int
 
-	err := tx.QueryRow(`
+	err := tx.QueryRowContext(ctx, `
 	SELECT balance 
 	FROM players
 	WHERE id = $1
@@ -114,9 +114,9 @@ func (r *PlayerRepository) GetBalance(tx *sql.Tx, playerID int64) (int, error) {
 	return balance, err
 }
 
-func (r *PlayerRepository) UpdateBalance(tx *sql.Tx, playerID int64, balance int) error {
-	_, err := tx.Exec(`
-	UPDATE players 
+func (r *PlayerRepository) UpdateBalance(ctx context.Context, tx *sql.Tx, playerID int64, balance int) error {
+	_, err := tx.ExecContext(ctx, `
+	UPDATE players
 	SET balance = $1
 	WHERE id = $2
 	`, balance, playerID)

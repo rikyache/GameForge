@@ -97,10 +97,10 @@ func (r *GameRepository) RemoveGame(ctx context.Context, id int64) error {
 	return err
 }
 
-func (r *GameRepository) GetPrice(tx *sql.Tx, gameID int64) (int, error) {
+func (r *GameRepository) GetPrice(ctx context.Context, tx *sql.Tx, gameID int64) (int, error) {
 	var price int
 
-	err := tx.QueryRow(`
+	err := tx.QueryRowContext(ctx, `
 		SELECT price
 		FROM games
 		WHERE id = $1

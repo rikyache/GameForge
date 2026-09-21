@@ -27,6 +27,8 @@ func (h *PlayerGamesHandler) AddGame(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
+	ctx := r.Context()
+
 	var purchaseRequest models.PurchaseRequest
 
 	err := json.NewDecoder(r.Body).Decode(&purchaseRequest)
@@ -35,7 +37,7 @@ func (h *PlayerGamesHandler) AddGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Service.BuyGame(
+	err = h.Service.BuyGame(ctx,
 		purchaseRequest.PlayerID,
 		purchaseRequest.GameID,
 	)
@@ -53,6 +55,8 @@ func (h *PlayerGamesHandler) GetPlayerGames(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	ctx := r.Context()
+
 	path := strings.TrimPrefix(r.URL.Path, "/players/")
 	path = strings.TrimSuffix(path, "/games")
 
@@ -62,7 +66,7 @@ func (h *PlayerGamesHandler) GetPlayerGames(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	games, err := h.Service.GetPlayerGames(playerID)
+	games, err := h.Service.GetPlayerGames(ctx, playerID)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -81,6 +85,8 @@ func (h *PlayerGamesHandler) RemoveGame(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	ctx := r.Context()
 
 	parts := strings.Split(r.URL.Path, "/")
 
@@ -101,7 +107,7 @@ func (h *PlayerGamesHandler) RemoveGame(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.Service.RemoveGame(playerID, gameID)
+	err = h.Service.RemoveGame(ctx, playerID, gameID)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -117,6 +123,8 @@ func (h *PlayerGamesHandler) RefundGame(w http.ResponseWriter, r *http.Request) 
 	}
 	defer r.Body.Close()
 
+	ctx := r.Context()
+
 	playerIDstr := r.PathValue("playerID")
 	gameIDstr := r.PathValue("gameID")
 
@@ -131,7 +139,7 @@ func (h *PlayerGamesHandler) RefundGame(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.Service.Refund(playerID, gameID)
+	err = h.Service.Refund(ctx, playerID, gameID)
 	if err != nil {
 		handleError(w, err)
 		return

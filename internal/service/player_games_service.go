@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testsmth/internal/apperrors"
 	"testsmth/internal/models"
 	"testsmth/internal/repository"
@@ -18,7 +19,7 @@ func NewPlayerGamesService(
 	}
 }
 
-func (s *PlayerGamesService) BuyGame(playerID, gameID int64) error {
+func (s *PlayerGamesService) BuyGame(ctx context.Context, playerID, gameID int64) error {
 	if playerID <= 0 {
 		return apperrors.ErrInvalidInput
 	}
@@ -27,18 +28,18 @@ func (s *PlayerGamesService) BuyGame(playerID, gameID int64) error {
 		return apperrors.ErrInvalidInput
 	}
 
-	return s.repo.BuyGame(playerID, gameID)
+	return s.repo.BuyGame(ctx, playerID, gameID)
 }
 
-func (s *PlayerGamesService) GetPlayerGames(playerID int64) ([]models.OwnedGame, error) {
+func (s *PlayerGamesService) GetPlayerGames(ctx context.Context, playerID int64) ([]models.OwnedGame, error) {
 	if playerID <= 0 {
 		return nil, apperrors.ErrInvalidInput
 	}
 
-	return s.repo.GetPlayerGames(playerID)
+	return s.repo.GetPlayerGames(ctx, playerID)
 }
 
-func (s *PlayerGamesService) RemoveGame(playerID, gameID int64) error {
+func (s *PlayerGamesService) RemoveGame(ctx context.Context, playerID, gameID int64) error {
 	if playerID <= 0 {
 		return apperrors.ErrInvalidInput
 	}
@@ -47,10 +48,10 @@ func (s *PlayerGamesService) RemoveGame(playerID, gameID int64) error {
 		return apperrors.ErrInvalidInput
 	}
 
-	return s.repo.RemoveGame(playerID, gameID)
+	return s.repo.RemoveGame(ctx, playerID, gameID)
 }
 
-func (s *PlayerGamesService) Refund(playerID, gameID int64) error {
+func (s *PlayerGamesService) Refund(ctx context.Context, playerID, gameID int64) error {
 	if playerID <= 0 {
 		return apperrors.ErrInvalidInput
 	}
@@ -58,5 +59,5 @@ func (s *PlayerGamesService) Refund(playerID, gameID int64) error {
 		return apperrors.ErrInvalidInput
 	}
 
-	return s.repo.Refund(playerID, gameID)
+	return s.repo.Refund(ctx, playerID, gameID)
 }

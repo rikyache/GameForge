@@ -25,12 +25,10 @@ func NewCachedPlayerGameRepository(
 	}
 }
 
-func (r *CachedPlayerGameRepository) BuyGame(playerID int64, gameID int64) error {
-	if err := r.repo.BuyGame(playerID, gameID); err != nil {
+func (r *CachedPlayerGameRepository) BuyGame(ctx context.Context, playerID int64, gameID int64) error {
+	if err := r.repo.BuyGame(ctx, playerID, gameID); err != nil {
 		return err
 	}
-
-	ctx := context.Background()
 
 	if err := r.cache.Delete(ctx, fmt.Sprintf("player:%d", playerID)); err != nil {
 		return err
@@ -43,10 +41,10 @@ func (r *CachedPlayerGameRepository) BuyGame(playerID int64, gameID int64) error
 	return nil
 }
 
-func (r *CachedPlayerGameRepository) GetPlayerGames(playerID int64) ([]models.OwnedGame, error) {
+func (r *CachedPlayerGameRepository) GetPlayerGames(ctx context.Context, playerID int64) ([]models.OwnedGame, error) {
 	key := fmt.Sprintf("player_games:%d", playerID)
 
-	cached, err := r.cache.Get(context.Background(), key)
+	cached, err := r.cache.Get(ctx, key)
 
 	if err == nil {
 		var games []models.OwnedGame
@@ -62,7 +60,7 @@ func (r *CachedPlayerGameRepository) GetPlayerGames(playerID int64) ([]models.Ow
 		log.Printf("cannot get cached games: %v", err)
 	}
 
-	games, err := r.repo.GetPlayerGames(playerID)
+	games, err := r.repo.GetPlayerGames(ctx, playerID)
 	if err != nil {
 		return nil, err
 	}
@@ -79,13 +77,11 @@ func (r *CachedPlayerGameRepository) GetPlayerGames(playerID int64) ([]models.Ow
 	return games, nil
 }
 
-func (r *CachedPlayerGameRepository) Refund(playerID int64, gameID int64) error {
+func (r *CachedPlayerGameRepository) Refund(ctx context.Context, playerID int64, gameID int64) error {
 
-	if err := r.repo.Refund(playerID, gameID); err != nil {
+	if err := r.repo.Refund(ctx, playerID, gameID); err != nil {
 		return err
 	}
-
-	ctx := context.Background()
 
 	if err := r.cache.Delete(ctx, fmt.Sprintf("player:%d", playerID)); err != nil {
 		return err
@@ -99,15 +95,14 @@ func (r *CachedPlayerGameRepository) Refund(playerID int64, gameID int64) error 
 }
 
 func (r *CachedPlayerGameRepository) RemoveGame(
+	ctx context.Context,
 	playerID int64,
 	gameID int64,
 ) error {
 
-	if err := r.repo.RemoveGame(playerID, gameID); err != nil {
+	if err := r.repo.RemoveGame(ctx, playerID, gameID); err != nil {
 		return err
 	}
-
-	ctx := context.Background()
 
 	if err := r.cache.Delete(ctx, fmt.Sprintf("player_games:%d", playerID)); err != nil {
 		return err
