@@ -11,11 +11,11 @@ type PlayerService struct {
 }
 
 type PlayerRepository interface {
-	GetPlayer(id int64) (*models.Player, error)
-	AddPlayer(name string) error
-	RemovePlayer(id int64) error
-	ListPlayers() ([]models.Player, error)
-	Deposit(playerID int64, amount int) error
+	GetPlayer(ctx context.Context, id int64) (*models.Player, error)
+	AddPlayer(ctx context.Context, name string) error
+	RemovePlayer(ctx context.Context, id int64) error
+	ListPlayers(ctx context.Context) ([]models.Player, error)
+	Deposit(ctx context.Context, playerID int64, amount int) error
 	GetProfile(ctx context.Context, playerID int64) (*models.PlayerProfile, error)
 }
 
@@ -25,15 +25,15 @@ func NewPlayerService(repo PlayerRepository) *PlayerService {
 	}
 }
 
-func (s *PlayerService) GetPlayer(id int64) (*models.Player, error) {
+func (s *PlayerService) GetPlayer(ctx context.Context, id int64) (*models.Player, error) {
 	if id <= 0 {
 		return nil, apperrors.ErrInvalidInput
 	}
 
-	return s.repo.GetPlayer(id)
+	return s.repo.GetPlayer(ctx, id)
 }
 
-func (s *PlayerService) AddPlayer(player models.Player) error {
+func (s *PlayerService) AddPlayer(ctx context.Context, player models.Player) error {
 	if player.Name == "" {
 		return apperrors.ErrInvalidInput
 	}
@@ -46,29 +46,29 @@ func (s *PlayerService) AddPlayer(player models.Player) error {
 		return apperrors.ErrInvalidInput
 	}
 
-	return s.repo.AddPlayer(player.Name)
+	return s.repo.AddPlayer(ctx, player.Name)
 }
 
-func (s *PlayerService) RemovePlayer(id int64) error {
+func (s *PlayerService) RemovePlayer(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return apperrors.ErrInvalidInput
 	}
 
-	return s.repo.RemovePlayer(id)
+	return s.repo.RemovePlayer(ctx, id)
 }
 
-func (s *PlayerService) ListPlayers() ([]models.Player, error) {
-	return s.repo.ListPlayers()
+func (s *PlayerService) ListPlayers(ctx context.Context) ([]models.Player, error) {
+	return s.repo.ListPlayers(ctx)
 }
 
-func (s *PlayerService) Deposit(playerID int64, amount int) error {
+func (s *PlayerService) Deposit(ctx context.Context, playerID int64, amount int) error {
 	if amount <= 0 {
 		return apperrors.ErrInvalidInput
 	}
 	if playerID <= 0 {
 		return apperrors.ErrInvalidInput
 	}
-	return s.repo.Deposit(playerID, amount)
+	return s.repo.Deposit(ctx, playerID, amount)
 }
 
 func (s *PlayerService) GetProfile(ctx context.Context, playerID int64) (*models.PlayerProfile, error) {

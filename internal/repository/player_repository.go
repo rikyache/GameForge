@@ -18,18 +18,18 @@ func NewPlayerRepository(db *sql.DB) *PlayerRepository {
 	}
 }
 
-func (r *PlayerRepository) AddPlayer(name string) error {
+func (r *PlayerRepository) AddPlayer(ctx context.Context, name string) error {
 	query := `
 	INSERT INTO players (name)
 	VALUES ($1)
 `
 
-	_, err := r.DB.Exec(query, name)
+	_, err := r.DB.ExecContext(ctx, query, name)
 
 	return err
 }
 
-func (r *PlayerRepository) GetPlayer(id int64) (*models.Player, error) {
+func (r *PlayerRepository) GetPlayer(ctx context.Context, id int64) (*models.Player, error) {
 	query := `
 		SELECT id, name, balance, created_at
 		FROM players
@@ -38,7 +38,7 @@ func (r *PlayerRepository) GetPlayer(id int64) (*models.Player, error) {
 
 	var player models.Player
 
-	err := r.DB.QueryRow(query, id).Scan(
+	err := r.DB.QueryRowContext(ctx, query, id).Scan(
 		&player.ID,
 		&player.Name,
 		&player.Balance,
@@ -52,7 +52,7 @@ func (r *PlayerRepository) GetPlayer(id int64) (*models.Player, error) {
 	return &player, nil
 }
 
-func (r *PlayerRepository) ListPlayers() ([]models.Player, error) {
+func (r *PlayerRepository) ListPlayers(ctx context.Context) ([]models.Player, error) {
 	query := `
 	SELECT id, name, balance, created_at 
 	FROM players
@@ -60,7 +60,7 @@ func (r *PlayerRepository) ListPlayers() ([]models.Player, error) {
 
 	var Players []models.Player
 
-	rows, err := r.DB.Query(query)
+	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -86,14 +86,14 @@ func (r *PlayerRepository) ListPlayers() ([]models.Player, error) {
 	return Players, nil
 }
 
-func (r *PlayerRepository) RemovePlayer(id int64) error {
+func (r *PlayerRepository) RemovePlayer(ctx context.Context, id int64) error {
 
 	query := `
 		DELETE FROM players
 		WHERE id = $1
 	`
 
-	_, err := r.DB.Exec(query, id)
+	_, err := r.DB.ExecContext(ctx, query, id)
 
 	if err != nil {
 		return err
@@ -124,14 +124,14 @@ func (r *PlayerRepository) UpdateBalance(tx *sql.Tx, playerID int64, balance int
 	return err
 }
 
-func (r *PlayerRepository) Deposit(playerID int64, amount int) error {
+func (r *PlayerRepository) Deposit(ctx context.Context, playerID int64, amount int) error {
 	query := `
     UPDATE players
     SET balance = balance + $1
     WHERE id = $2
 `
 
-	result, err := r.DB.Exec(query, amount, playerID)
+	result, err := r.DB.ExecContext(ctx, query, amount, playerID)
 	if err != nil {
 		return err
 	}

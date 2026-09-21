@@ -21,6 +21,8 @@ func NewPlayerHandler(service *service.PlayerService) *PlayerHandler {
 func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
+	ctx := r.Context()
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		http.Error(w, "invalid player id", http.StatusBadRequest)
@@ -29,7 +31,7 @@ func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request
 
 	switch r.Method {
 	case http.MethodGet:
-		player, err := h.Service.GetPlayer(id)
+		player, err := h.Service.GetPlayer(ctx, id)
 		if err != nil {
 			handleError(w, err)
 			return
@@ -43,7 +45,7 @@ func (h *PlayerHandler) GetOrDeletePlayer(w http.ResponseWriter, r *http.Request
 		}
 
 	case http.MethodDelete:
-		err := h.Service.RemovePlayer(id)
+		err := h.Service.RemovePlayer(ctx, id)
 		if err != nil {
 			handleError(w, err)
 			return
@@ -62,7 +64,9 @@ func (h *PlayerHandler) ListPlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	players, err := h.Service.ListPlayers()
+	ctx := r.Context()
+
+	players, err := h.Service.ListPlayers(ctx)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -84,6 +88,8 @@ func (h *PlayerHandler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
+	ctx := r.Context()
+
 	var player models.Player
 
 	err := json.NewDecoder(r.Body).Decode(&player)
@@ -92,7 +98,7 @@ func (h *PlayerHandler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Service.AddPlayer(player)
+	err = h.Service.AddPlayer(ctx, player)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -110,6 +116,8 @@ func (h *PlayerHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 
 	var amount models.DepositRequest
 
+	ctx := r.Context()
+
 	err := json.NewDecoder(r.Body).Decode(&amount)
 	if err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -125,7 +133,7 @@ func (h *PlayerHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Service.Deposit(playerID, money)
+	err = h.Service.Deposit(ctx, playerID, money)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -147,7 +155,9 @@ func (h *PlayerHandler) PlayerProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, err := h.Service.GetProfile(r.Context(), id)
+	ctx := r.Context()
+
+	profile, err := h.Service.GetProfile(ctx, id)
 	if err != nil {
 		handleError(w, err)
 		return

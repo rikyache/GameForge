@@ -22,7 +22,7 @@ func NewCachedPlayerRepository(repo *PlayerRepository, cache cache.Cache) *Cache
 	}
 }
 
-func (r *CachedPlayerRepository) GetPlayer(id int64) (*models.Player, error) {
+func (r *CachedPlayerRepository) GetPlayer(ctx context.Context, id int64) (*models.Player, error) {
 	key := fmt.Sprintf("player:%d", id)
 
 	cached, err := r.cache.Get(context.Background(), key)
@@ -39,7 +39,7 @@ func (r *CachedPlayerRepository) GetPlayer(id int64) (*models.Player, error) {
 		log.Printf("cannot get player: %v", err)
 	}
 
-	player, err := r.repo.GetPlayer(id)
+	player, err := r.repo.GetPlayer(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -59,20 +59,20 @@ func (r *CachedPlayerRepository) GetPlayer(id int64) (*models.Player, error) {
 	return player, nil
 }
 
-func (r *CachedPlayerRepository) AddPlayer(name string) error {
-	return r.repo.AddPlayer(name)
+func (r *CachedPlayerRepository) AddPlayer(ctx context.Context, name string) error {
+	return r.repo.AddPlayer(ctx, name)
 }
 
-func (r *CachedPlayerRepository) RemovePlayer(id int64) error {
-	return r.repo.RemovePlayer(id)
+func (r *CachedPlayerRepository) RemovePlayer(ctx context.Context, id int64) error {
+	return r.repo.RemovePlayer(ctx, id)
 }
 
-func (r *CachedPlayerRepository) ListPlayers() ([]models.Player, error) {
-	return r.repo.ListPlayers()
+func (r *CachedPlayerRepository) ListPlayers(ctx context.Context) ([]models.Player, error) {
+	return r.repo.ListPlayers(ctx)
 }
 
-func (r *CachedPlayerRepository) Deposit(playerID int64, amount int) error {
-	if err := r.repo.Deposit(playerID, amount); err != nil {
+func (r *CachedPlayerRepository) Deposit(ctx context.Context, playerID int64, amount int) error {
+	if err := r.repo.Deposit(ctx, playerID, amount); err != nil {
 		return err
 	}
 
