@@ -94,6 +94,9 @@ func (r *PlayerGameRepository) RemoveGame(ctx context.Context, playerID int64, g
 `
 
 	result, err := r.DB.ExecContext(ctx, query, playerID, gameID)
+	if err != nil {
+		return err
+	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
@@ -192,7 +195,7 @@ func (r *PlayerGameRepository) BuyGame(ctx context.Context, playerID int64, game
 }
 
 func (r *PlayerGameRepository) Refund(ctx context.Context, playerID int64, gameID int64) error {
-	tx, err := r.DB.Begin()
+	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -226,7 +229,7 @@ func (r *PlayerGameRepository) Refund(ctx context.Context, playerID int64, gameI
 		return err
 	}
 
-	_, err = tx.Exec(`
+	_, err = tx.ExecContext(ctx, `
 		DELETE FROM player_games
 		WHERE player_id = $1
 		  AND game_id = $2
