@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"testsmth/internal/apperrors"
+	"testsmth/internal/auth"
 	"testsmth/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
@@ -42,19 +43,24 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) 
 	return s.repo.CreateUser(ctx, params)
 }
 
-func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) error {
+func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (string, error) {
 	if req.Email == "" || req.Password == "" {
-		return apperrors.ErrInvalidInput
+		return "", apperrors.ErrInvalidInput
 	}
 
 	player, err := s.repo.GetByEmail(ctx, req.Email)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(player.PasswordHash), []byte(req.Password)); err != nil {
-		return apperrors.ErrInvalidCredentials
+		return "", apperrors.ErrInvalidCredentials
 	}
 
-	return nil
+	token, err := auth.GenerateToken(player.ID)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }

@@ -57,8 +57,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Service.Login(r.Context(), req); err != nil {
+	token, err := h.Service.Login(r.Context(), req)
+	if err != nil {
 		handleError(w, err)
 		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]string{
+		"access_token": token,
+	}); err != nil {
+		handleError(w, err)
 	}
 }
