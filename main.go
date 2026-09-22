@@ -84,21 +84,21 @@ func main() {
 	mux.HandleFunc("DELETE /players/{id}", playerHandler.GetOrDeletePlayer)
 
 	// Player actions
-	mux.HandleFunc("POST /players/{id}/deposit", playerHandler.Deposit)
-	mux.HandleFunc("GET /players/{id}/profile", playerHandler.PlayerProfile)
+	mux.Handle("POST /players/{id}/deposit", middleware.Auth(http.HandlerFunc(playerHandler.Deposit)))
+	mux.Handle("GET /players/{id}/profile", middleware.Auth(http.HandlerFunc(playerHandler.PlayerProfile)))
 
 	// Games
 	mux.HandleFunc("GET /games", gameHandler.ListGames)
-	mux.HandleFunc("POST /games", gameHandler.AddGame)
+	mux.Handle("POST /games", middleware.Auth(http.HandlerFunc(playerGamesHandler.AddGame)))
 
-	mux.HandleFunc("GET /games/{id}", gameHandler.GetOrDeleteGame)
-	mux.HandleFunc("DELETE /games/{id}", gameHandler.GetOrDeleteGame)
+	mux.Handle("GET /games/{id}", middleware.Auth(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
+	mux.Handle("DELETE /games/{id}", middleware.Auth(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
 
 	// Player-Games
-	mux.HandleFunc("POST /players/{id}/games", playerGamesHandler.AddGame)
-	mux.HandleFunc("GET /players/{id}/games", playerGamesHandler.GetPlayerGames)
-	mux.HandleFunc("DELETE /players/{playerID}/games/{gameID}", playerGamesHandler.RemoveGame)
-	mux.HandleFunc("POST /player/{playerID}/games/{gameID}/refund", playerGamesHandler.RefundGame)
+	mux.Handle("POST /players/{id}/games", middleware.Auth(http.HandlerFunc(playerGamesHandler.AddGame)))
+	mux.Handle("GET /players/{id}/games", middleware.Auth(http.HandlerFunc(playerGamesHandler.GetPlayerGames)))
+	mux.Handle("DELETE /players/{playerID}/games/{gameID}", middleware.Auth(http.HandlerFunc(playerGamesHandler.RemoveGame)))
+	mux.Handle("POST /player/{playerID}/games/{gameID}/refund", middleware.Auth(http.HandlerFunc(playerGamesHandler.RefundGame)))
 
 	// Register, login
 	mux.HandleFunc("POST /auth/register", authHandler.Register)
