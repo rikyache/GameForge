@@ -61,6 +61,10 @@ func main() {
 		playerGamesService,
 	)
 
+	authRepo := repository.NewAuthRepository(db)
+	authService := service.NewAuthService(authRepo)
+	authHandler := handlers.NewAuthHandler(authService)
+
 	mux := http.NewServeMux()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +99,8 @@ func main() {
 	mux.HandleFunc("GET /players/{id}/games", playerGamesHandler.GetPlayerGames)
 	mux.HandleFunc("DELETE /players/{playerID}/games/{gameID}", playerGamesHandler.RemoveGame)
 	mux.HandleFunc("POST /player/{playerID}/games/{gameID}/refund", playerGamesHandler.RefundGame)
+
+	mux.HandleFunc("POST  /auth/register/", authHandler.Register)
 
 	http.ListenAndServe(":8080", middleware.Logger(mux))
 }
