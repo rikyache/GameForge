@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
-	"golang.org/x/crypto/bcrypt"
 	"testsmth/internal/apperrors"
 	"testsmth/internal/models"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthRepository interface {
@@ -39,4 +40,21 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) 
 	}
 
 	return s.repo.CreateUser(ctx, params)
+}
+
+func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) error {
+	if req.Email == "" || req.Password == "" {
+		return apperrors.ErrInvalidInput
+	}
+
+	player, err := s.repo.GetByEmail(ctx, req.Email)
+	if err != nil {
+		return err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(player.PasswordHash), []byte(req.Password)); err != nil {
+		return apperrors.ErrInvalidCredentials
+	}
+
+	return nil
 }

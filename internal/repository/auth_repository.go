@@ -11,8 +11,26 @@ type AuthRepository struct {
 }
 
 func (r *AuthRepository) GetByEmail(ctx context.Context, email string) (*models.Player, error) {
-	//TODO implement me
-	panic("implement me")
+	query := `
+		SELECT id, name, balance, email, password_hash, created_at
+		FROM players
+		WHERE email = $1
+`
+	var player models.Player
+	err := r.DB.QueryRowContext(ctx, query, email).Scan(
+		&player.ID,
+		&player.Name,
+		&player.Balance,
+		&player.Email,
+		&player.PasswordHash,
+		&player.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &player, nil
 }
 
 func NewAuthRepository(db *sql.DB) *AuthRepository {
@@ -22,6 +40,7 @@ func NewAuthRepository(db *sql.DB) *AuthRepository {
 }
 
 func (r *AuthRepository) CreateUser(ctx context.Context, params models.CreateUserParams) error {
+
 	query := `
 		INSERT INTO players(
 		    name,

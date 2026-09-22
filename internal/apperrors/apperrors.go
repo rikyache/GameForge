@@ -12,4 +12,6 @@ var (
 
 	ErrAlreadyExists       = errors.New("resource already exists")
 	ErrInsufficientBalance = errors.New("insufficient balance")
+
+	ErrInvalidCredentials = errors.New("invalid credentials")
 )

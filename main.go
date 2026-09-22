@@ -100,7 +100,9 @@ func main() {
 	mux.HandleFunc("DELETE /players/{playerID}/games/{gameID}", playerGamesHandler.RemoveGame)
 	mux.HandleFunc("POST /player/{playerID}/games/{gameID}/refund", playerGamesHandler.RefundGame)
 
-	mux.HandleFunc("POST  /auth/register/", authHandler.Register)
+	// Register, login
+	mux.HandleFunc("POST /auth/register", authHandler.Register)
+	mux.HandleFunc("POST /auth/login", authHandler.Login)
 
 	http.ListenAndServe(":8080", middleware.Logger(mux))
 }
