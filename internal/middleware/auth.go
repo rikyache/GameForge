@@ -40,3 +40,8 @@ func Auth(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+func PlayerIDFromContext(ctx context.Context) (int64, bool) {
+	playerID, ok := ctx.Value(playerIDKey).(int64)
+	return playerID, ok
+}

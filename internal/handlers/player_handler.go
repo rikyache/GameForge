@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"testsmth/internal/middleware"
 	"testsmth/internal/models"
 	"testsmth/internal/service"
 )
@@ -125,11 +126,9 @@ func (h *PlayerHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	money := amount.Amount
-	idStr := r.PathValue("id")
-
-	playerID, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "invalid player id", http.StatusBadRequest)
+	playerID, ok := middleware.PlayerIDFromContext(ctx)
+	if !ok {
+		http.Error(w, "invalid request body", http.StatusUnauthorized)
 		return
 	}
 
@@ -147,17 +146,15 @@ func (h *PlayerHandler) PlayerProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idStr := r.PathValue("id")
+	ctx := r.Context()
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "invalid player id", http.StatusBadRequest)
+	playerID, ok := middleware.PlayerIDFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	ctx := r.Context()
-
-	profile, err := h.Service.GetProfile(ctx, id)
+	profile, err := h.Service.GetProfile(ctx, playerID)
 	if err != nil {
 		handleError(w, err)
 		return

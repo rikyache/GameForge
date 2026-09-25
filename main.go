@@ -71,21 +71,12 @@ func main() {
 		fmt.Fprintln(w, "Hello Docker")
 	})
 
-	//игроки
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello Docker")
-	})
-
 	// Players
 	mux.HandleFunc("GET /players", playerHandler.ListPlayers)
 	mux.HandleFunc("POST /players", playerHandler.AddPlayer)
 
 	mux.HandleFunc("GET /players/{id}", playerHandler.GetOrDeletePlayer)
 	mux.HandleFunc("DELETE /players/{id}", playerHandler.GetOrDeletePlayer)
-
-	// Player actions
-	mux.Handle("POST /players/{id}/deposit", middleware.Auth(http.HandlerFunc(playerHandler.Deposit)))
-	mux.Handle("GET /players/{id}/profile", middleware.Auth(http.HandlerFunc(playerHandler.PlayerProfile)))
 
 	// Games
 	mux.HandleFunc("GET /games", gameHandler.ListGames)
@@ -95,10 +86,14 @@ func main() {
 	mux.Handle("DELETE /games/{id}", middleware.Auth(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
 
 	// Player-Games
-	mux.Handle("POST /players/{id}/games", middleware.Auth(http.HandlerFunc(playerGamesHandler.AddGame)))
-	mux.Handle("GET /players/{id}/games", middleware.Auth(http.HandlerFunc(playerGamesHandler.GetPlayerGames)))
-	mux.Handle("DELETE /players/{playerID}/games/{gameID}", middleware.Auth(http.HandlerFunc(playerGamesHandler.RemoveGame)))
-	mux.Handle("POST /player/{playerID}/games/{gameID}/refund", middleware.Auth(http.HandlerFunc(playerGamesHandler.RefundGame)))
+	mux.Handle("POST /me/games", middleware.Auth(http.HandlerFunc(playerGamesHandler.AddGame)))
+	mux.Handle("GET /me/games", middleware.Auth(http.HandlerFunc(playerGamesHandler.GetPlayerGames)))
+	mux.Handle("DELETE /me/games/{gameID}", middleware.Auth(http.HandlerFunc(playerGamesHandler.RemoveGame)))
+	mux.Handle("POST /me/games/{gameID}/refund", middleware.Auth(http.HandlerFunc(playerGamesHandler.RefundGame)))
+
+	// Player
+	mux.Handle("POST /me/deposit", middleware.Auth(http.HandlerFunc(playerHandler.Deposit)))
+	mux.Handle("GET /me/", middleware.Auth(http.HandlerFunc(playerHandler.PlayerProfile)))
 
 	// Register, login
 	mux.HandleFunc("POST /auth/register", authHandler.Register)

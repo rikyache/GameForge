@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
+	"testsmth/internal/middleware"
 	"testsmth/internal/models"
 	"testsmth/internal/service"
 )
@@ -29,6 +29,12 @@ func (h *PlayerGamesHandler) AddGame(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
+	playerID, ok := middleware.PlayerIDFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	var purchaseRequest models.PurchaseRequest
 
 	err := json.NewDecoder(r.Body).Decode(&purchaseRequest)
@@ -38,7 +44,7 @@ func (h *PlayerGamesHandler) AddGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.Service.BuyGame(ctx,
-		purchaseRequest.PlayerID,
+		playerID,
 		purchaseRequest.GameID,
 	)
 	if err != nil {
@@ -57,12 +63,9 @@ func (h *PlayerGamesHandler) GetPlayerGames(w http.ResponseWriter, r *http.Reque
 
 	ctx := r.Context()
 
-	path := strings.TrimPrefix(r.URL.Path, "/players/")
-	path = strings.TrimSuffix(path, "/games")
-
-	playerID, err := strconv.ParseInt(path, 10, 64)
-	if err != nil {
-		http.Error(w, "invalid player id", http.StatusBadRequest)
+	playerID, ok := middleware.PlayerIDFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -88,27 +91,19 @@ func (h *PlayerGamesHandler) RemoveGame(w http.ResponseWriter, r *http.Request) 
 
 	ctx := r.Context()
 
-	parts := strings.Split(r.URL.Path, "/")
-
-	if len(parts) < 5 {
-		http.Error(w, "invalid path", http.StatusBadRequest)
+	playerID, ok := middleware.PlayerIDFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	playerID, err := strconv.ParseInt(parts[2], 10, 64)
-	if err != nil {
-		http.Error(w, "invalid player id", http.StatusBadRequest)
-		return
-	}
-
-	gameID, err := strconv.ParseInt(parts[len(parts)-1], 10, 64)
+	gameID, err := strconv.ParseInt(r.PathValue("gameID"), 10, 64)
 	if err != nil {
 		http.Error(w, "invalid game id", http.StatusBadRequest)
 		return
 	}
 
-	err = h.Service.RemoveGame(ctx, playerID, gameID)
-	if err != nil {
+	if err := h.Service.RemoveGame(ctx, playerID, gameID); err != nil {
 		handleError(w, err)
 		return
 	}
@@ -125,14 +120,13 @@ func (h *PlayerGamesHandler) RefundGame(w http.ResponseWriter, r *http.Request) 
 
 	ctx := r.Context()
 
-	playerIDstr := r.PathValue("playerID")
-	gameIDstr := r.PathValue("gameID")
-
-	playerID, err := strconv.ParseInt(playerIDstr, 10, 64)
-	if err != nil {
-		http.Error(w, "invalid player id", http.StatusBadRequest)
+	playerID, ok := middleware.PlayerIDFromContext(ctx)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
+	gameIDstr := r.PathValue("gameID")
+
 	gameID, err := strconv.ParseInt(gameIDstr, 10, 64)
 	if err != nil {
 		http.Error(w, "invalid game id", http.StatusBadRequest)
@@ -145,5 +139,5 @@ func (h *PlayerGamesHandler) RefundGame(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusNoContent)
 }
