@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"testsmth/internal/auth"
 	"testsmth/internal/cache"
 	"testsmth/internal/database"
 	"testsmth/internal/handlers"
@@ -30,6 +31,9 @@ func main() {
 	defer redisClient.Close()
 
 	redisCache := cache.NewRedisCache(redisClient)
+
+	tokenBlacklist := auth.NewRedisTokenBlacklist(redisClient)
+	authMiddleware := middleware.Auth(tokenBlacklist)
 
 	//base url
 
@@ -63,7 +67,7 @@ func main() {
 
 	authRepo := repository.NewAuthRepository(db)
 	authService := service.NewAuthService(authRepo)
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, tokenBlacklist)
 
 	mux := http.NewServeMux()
 
@@ -80,24 +84,27 @@ func main() {
 
 	// Games
 	mux.HandleFunc("GET /games", gameHandler.ListGames)
-	mux.Handle("POST /games", middleware.Auth(http.HandlerFunc(playerGamesHandler.AddGame)))
+	mux.Handle("POST /games", authMiddleware(http.HandlerFunc(playerGamesHandler.AddGame)))
 
-	mux.Handle("GET /games/{id}", middleware.Auth(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
-	mux.Handle("DELETE /games/{id}", middleware.Auth(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
+	mux.Handle("GET /games/{id}", authMiddleware(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
+	mux.Handle("DELETE /games/{id}", authMiddleware(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
 
 	// Player-Games
-	mux.Handle("POST /me/games", middleware.Auth(http.HandlerFunc(playerGamesHandler.AddGame)))
-	mux.Handle("GET /me/games", middleware.Auth(http.HandlerFunc(playerGamesHandler.GetPlayerGames)))
-	mux.Handle("DELETE /me/games/{gameID}", middleware.Auth(http.HandlerFunc(playerGamesHandler.RemoveGame)))
-	mux.Handle("POST /me/games/{gameID}/refund", middleware.Auth(http.HandlerFunc(playerGamesHandler.RefundGame)))
+	mux.Handle("POST /me/games", authMiddleware(http.HandlerFunc(playerGamesHandler.AddGame)))
+	mux.Handle("GET /me/games", authMiddleware(http.HandlerFunc(playerGamesHandler.GetPlayerGames)))
+	mux.Handle("DELETE /me/games/{gameID}", authMiddleware(http.HandlerFunc(playerGamesHandler.RemoveGame)))
+	mux.Handle("POST /me/games/{gameID}/refund", authMiddleware(http.HandlerFunc(playerGamesHandler.RefundGame)))
 
 	// Player
-	mux.Handle("POST /me/deposit", middleware.Auth(http.HandlerFunc(playerHandler.Deposit)))
-	mux.Handle("GET /me/", middleware.Auth(http.HandlerFunc(playerHandler.PlayerProfile)))
+	mux.Handle("POST /me/deposit", authMiddleware(http.HandlerFunc(playerHandler.Deposit)))
+	mux.Handle("GET /me/", authMiddleware(http.HandlerFunc(playerHandler.PlayerProfile)))
 
 	// Register, login
 	mux.HandleFunc("POST /auth/register", authHandler.Register)
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
+	mux.HandleFunc("Post /auth/logout", authMiddleware(http.HandlerFunc(authHandler.Logout)))
+	// TODO
+	// make logout func
 
 	http.ListenAndServe(":8080", middleware.Logger(mux))
 }
