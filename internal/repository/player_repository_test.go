@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 )
@@ -60,7 +61,7 @@ func TestAddPlayer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := playerRepo.AddPlayer(tt.playerName)
+			err := playerRepo.AddPlayer(context.Background(), tt.playerName)
 
 			if tt.wantErr {
 				if err == nil {
@@ -137,7 +138,7 @@ func TestRemovePlayer(t *testing.T) {
 			}
 
 			// Act
-			err := playerRepo.RemovePlayer(playerID)
+			err := playerRepo.RemovePlayer(context.Background(), playerID)
 
 			// Assert: error
 			if tt.wantErr {
@@ -215,7 +216,7 @@ func TestGetPlayer(t *testing.T) {
 				playerID = 999999
 			}
 
-			player, err := playerRepo.GetPlayer(playerID)
+			player, err := playerRepo.GetPlayer(context.Background(), playerID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf(
@@ -252,7 +253,7 @@ func TestListPlayers(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		players, err := playerRepo.ListPlayers()
+		players, err := playerRepo.ListPlayers(context.Background())
 
 		if err != nil {
 			t.Fatal(err)

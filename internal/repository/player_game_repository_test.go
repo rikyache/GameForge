@@ -1,7 +1,10 @@
 package repository
 
 import (
+	"context"
+	"errors"
 	"testing"
+	"testsmth/internal/apperrors"
 
 	_ "github.com/lib/pq"
 )
@@ -124,7 +127,7 @@ func TestBuyGame(t *testing.T) {
 
 			// Act
 
-			err := playerGameRepo.BuyGame(playerID, gameID)
+			err := playerGameRepo.BuyGame(context.Background(), playerID, gameID)
 
 			// Assert: error
 
@@ -256,7 +259,7 @@ func TestGetPlayerGames(t *testing.T) {
 
 			// Act
 
-			games, err := playerGameRepo.GetPlayerGames(playerID)
+			games, err := playerGameRepo.GetPlayerGames(context.Background(), playerID)
 
 			if err != nil {
 				t.Fatal(err)
@@ -341,7 +344,7 @@ func TestRemoveGame(t *testing.T) {
 
 			// Act
 
-			err = playerGameRepo.RemoveGame(playerID, gameID)
+			err = playerGameRepo.RemoveGame(context.Background(), playerID, gameID)
 
 			// Assert: error
 
@@ -556,5 +559,497 @@ func TestExists(t *testing.T) {
 				t.Errorf("exists = %v, want %v", exists, tt.want)
 			}
 		})
+	}
+}
+
+func TestRefund(t *testing.T) {
+	// Arrange
+	ctx := t.Context()
+	db := setupTestDB(t)
+
+	playerRepo := NewPlayerRepository(db)
+	gameRepo := NewGameRepository(db)
+
+	repo := NewPlayerGameRepository(db, playerRepo, gameRepo)
+
+	var playerID int64
+
+	err := db.QueryRowContext(ctx, `
+		INSERT INTO players (name, balance)
+		VALUES ($1, $2)
+		RETURNING id
+`, "Tester", 1000).Scan(&playerID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var gameID int64
+
+	err = db.QueryRowContext(ctx, `
+    	INSERT INTO games (name, genre, price)
+    	VALUES ($1, $2, $3)
+    	RETURNING id
+	`, "TestGame", "TestGenre", 300).Scan(&gameID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = db.ExecContext(ctx, `
+    	INSERT INTO player_games (player_id, game_id)
+    	VALUES ($1, $2)
+	`, playerID, gameID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	//	Act
+	err = repo.Refund(ctx, playerID, gameID)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	//	Assert
+	var balance int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT balance
+		FROM players
+		WHERE id = $1
+	`, playerID).Scan(&balance)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if balance != 1300 {
+		t.Errorf("balance = %d, want %d", balance, 1300)
+	}
+
+	var count int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM player_games
+		WHERE player_id = $1
+		  AND game_id = $2
+	`, playerID, gameID).Scan(&count)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if count != 0 {
+		t.Errorf("game still exists in player_games")
+	}
+}
+
+func TestRefund_GameNotOwned(t *testing.T) {
+	// Arrange
+
+	ctx := t.Context()
+
+	db := setupTestDB(t)
+	playerRepo := NewPlayerRepository(db)
+	gameRepo := NewGameRepository(db)
+
+	repo := NewPlayerGameRepository(db, playerRepo, gameRepo)
+
+	var playerID int64
+
+	err := db.QueryRow(`
+	INSERT INTO players (name, balance)
+	VALUES ($1, $2)
+	RETURNING id
+`, "Tester", 1000).Scan(&playerID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var gameID int64
+
+	err = db.QueryRowContext(ctx, `
+	INSERT INTO games (name, genre, price)
+	VALUES ($1, $2, $3)
+	RETURNING id
+`, "TestGame", "TestGenre", 300).Scan(&gameID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act
+	err = repo.Refund(ctx, playerID, gameID)
+
+	if !errors.Is(err, apperrors.ErrGameNotFound) {
+		t.Fatalf("expected ErrGameNotFound, got %v", err)
+	}
+
+	// Assert
+	var balance int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT balance
+		FROM players
+		WHERE id = $1
+	`, playerID).Scan(&balance)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if balance != 1000 {
+		t.Errorf("balance = %d, want %d", balance, 1000)
+	}
+
+	var count int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM player_games
+		WHERE player_id = $1
+		  AND game_id = $2
+	`, playerID, gameID).Scan(&count)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if count != 0 {
+		t.Errorf("game still exists in player_games")
+	}
+}
+
+func TestRefund_RepeatedRefund(t *testing.T) {
+	// Arrange
+
+	ctx := t.Context()
+	db := setupTestDB(t)
+	playerRepo := NewPlayerRepository(db)
+	gameRepo := NewGameRepository(db)
+
+	repo := NewPlayerGameRepository(db, playerRepo, gameRepo)
+
+	var playerID int64
+	err := db.QueryRowContext(ctx, `
+	INSERT INTO players (name, balance)
+	VALUES ($1, $2)
+	RETURNING id
+`, "Tester", 1000).Scan(&playerID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var gameID int64
+
+	err = db.QueryRowContext(ctx, `
+	INSERT INTO games (name, genre, price)
+	VALUES ($1, $2, $3)
+	RETURNING id
+`, "TestGame", "TestGenre", 300).Scan(&gameID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = db.ExecContext(ctx, `
+    	INSERT INTO player_games (player_id, game_id)
+    	VALUES ($1, $2)
+	`, playerID, gameID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	//Act
+	err = repo.Refund(ctx, playerID, gameID)
+	if err != nil {
+		t.Fatalf("first refund failed: %v", err)
+	}
+
+	err = repo.Refund(ctx, playerID, gameID)
+
+	if !errors.Is(err, apperrors.ErrGameNotFound) {
+		t.Fatalf("expected ErrGameNotFound, got %v", err)
+	}
+	// Assert
+
+	var balance int
+
+	err = db.QueryRowContext(ctx, `
+	SELECT balance
+	FROM players
+	WHERE id = $1
+`, playerID).Scan(&balance)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if balance != 1300 {
+		t.Errorf("balance = %d, want %d", balance, 1300)
+	}
+
+	var count int
+
+	err = db.QueryRowContext(ctx, `
+	SELECT COUNT(*)
+	FROM player_games
+	WHERE player_id = $1
+		AND game_id = $2
+	`, playerID, gameID).Scan(&count)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if count != 0 {
+		t.Errorf("game still exists in player_games")
+	}
+}
+
+func TestBuyGame_AlreadyOwned(t *testing.T) {
+	//Arrange
+
+	ctx := t.Context()
+	db := setupTestDB(t)
+
+	playerRepo := NewPlayerRepository(db)
+	gameRepo := NewGameRepository(db)
+
+	repo := NewPlayerGameRepository(db, playerRepo, gameRepo)
+
+	var playerID int64
+
+	err := db.QueryRowContext(ctx, `
+	INSERT INTO players (name, balance)
+	VALUES ($1, $2)
+	RETURNING id
+`, "Tester", 1000).Scan(&playerID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var gameID int64
+
+	err = db.QueryRowContext(ctx, `
+	INSERT INTO games (name, genre, price)
+	VALUES ($1, $2, $3)
+	RETURNING id
+`, "TestGame", "TestGenre", 300).Scan(&gameID)
+
+	_, err = db.ExecContext(ctx, `
+		INSERT INTO player_games (player_id, game_id)
+		VALUES ($1, $2)
+	`, playerID, gameID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//Act
+
+	err = repo.BuyGame(ctx, playerID, gameID)
+
+	//Assert
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if err.Error() != "game already owned" {
+		t.Fatalf("expected game already owned, got %v", err)
+	}
+
+	var balance int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT balance
+		FROM players
+		WHERE id = $1
+	`, playerID).Scan(&balance)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if balance != 1000 {
+		t.Errorf("balance = %d, want %d", balance, 1000)
+	}
+
+	var count int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM player_games
+		WHERE player_id = $1
+		  AND game_id = $2
+	`, playerID, gameID).Scan(&count)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if count != 1 {
+		t.Errorf("game count = %d, want %d", count, 1)
+	}
+}
+
+func TestBuyGame_Success(t *testing.T) {
+	// Arrange
+	ctx := t.Context()
+	db := setupTestDB(t)
+
+	playerRepo := NewPlayerRepository(db)
+	gameRepo := NewGameRepository(db)
+
+	repo := NewPlayerGameRepository(db, playerRepo, gameRepo)
+
+	var playerID int64
+
+	err := db.QueryRowContext(ctx, `
+		INSERT INTO players (name, balance)
+		VALUES ($1, $2)
+		RETURNING id
+	`, "Tester", 1000).Scan(&playerID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var gameID int64
+
+	err = db.QueryRowContext(ctx, `
+		INSERT INTO games (name, genre, price)
+		VALUES ($1, $2, $3)
+		RETURNING id
+	`, "TestGame", "TestGenre", 300).Scan(&gameID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act
+	err = repo.BuyGame(ctx, playerID, gameID)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var balance int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT balance
+		FROM players
+		WHERE id = $1
+	`, playerID).Scan(&balance)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if balance != 700 {
+		t.Errorf("balance = %d, want %d", balance, 700)
+	}
+
+	var count int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM player_games
+		WHERE player_id = $1
+		  AND game_id = $2
+	`, playerID, gameID).Scan(&count)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if count != 1 {
+		t.Errorf("game count = %d, want %d", count, 1)
+	}
+}
+
+func TestBuyGame_NotEnoughBalance(t *testing.T) {
+	// Arrange
+	ctx := t.Context()
+	db := setupTestDB(t)
+
+	playerRepo := NewPlayerRepository(db)
+	gameRepo := NewGameRepository(db)
+
+	repo := NewPlayerGameRepository(db, playerRepo, gameRepo)
+
+	var playerID int64
+
+	err := db.QueryRowContext(ctx, `
+		INSERT INTO players (name, balance)
+		VALUES ($1, $2)
+		RETURNING id
+	`, "Tester", 200).Scan(&playerID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var gameID int64
+
+	err = db.QueryRowContext(ctx, `
+		INSERT INTO games (name, genre, price)
+		VALUES ($1, $2, $3)
+		RETURNING id
+	`, "TestGame", "TestGenre", 300).Scan(&gameID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act
+	err = repo.BuyGame(ctx, playerID, gameID)
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if err.Error() != "not enough balance to buy" {
+		t.Fatalf("expected not enough balance error, got %v", err)
+	}
+
+	var balance int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT balance
+		FROM players
+		WHERE id = $1
+	`, playerID).Scan(&balance)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if balance != 200 {
+		t.Errorf("balance = %d, want %d", balance, 200)
+	}
+
+	var count int
+
+	err = db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM player_games
+		WHERE player_id = $1
+		  AND game_id = $2
+	`, playerID, gameID).Scan(&count)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if count != 0 {
+		t.Errorf("game count = %d, want %d", count, 0)
 	}
 }

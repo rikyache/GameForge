@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"testing"
 )
 
@@ -44,7 +45,7 @@ func TestGetGame(t *testing.T) {
 				gameID = -1
 			}
 
-			game, err := gameRepo.GetGame(gameID)
+			game, err := gameRepo.GetGame(context.Background(), gameID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf(
@@ -124,7 +125,7 @@ func TestListGames(t *testing.T) {
 				}
 			}
 
-			games, err := gameRepo.ListGames()
+			games, err := gameRepo.ListGames(context.Background())
 
 			if err != nil {
 				t.Fatal(err)
