@@ -84,7 +84,7 @@ func main() {
 
 	// Games
 	mux.HandleFunc("GET /games", gameHandler.ListGames)
-	mux.Handle("POST /games", authMiddleware(http.HandlerFunc(playerGamesHandler.AddGame)))
+	mux.Handle("POST /games", authMiddleware(http.HandlerFunc(gameHandler.AddGame)))
 
 	mux.Handle("GET /games/{id}", authMiddleware(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
 	mux.Handle("DELETE /games/{id}", authMiddleware(http.HandlerFunc(gameHandler.GetOrDeleteGame)))
@@ -97,7 +97,7 @@ func main() {
 
 	// Player
 	mux.Handle("POST /me/deposit", authMiddleware(http.HandlerFunc(playerHandler.Deposit)))
-	mux.Handle("GET /me/", authMiddleware(http.HandlerFunc(playerHandler.PlayerProfile)))
+	mux.Handle("GET /me", authMiddleware(http.HandlerFunc(playerHandler.PlayerProfile)))
 
 	// Register, login
 	mux.HandleFunc("POST /auth/register", authHandler.Register)

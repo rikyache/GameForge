@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -32,10 +33,12 @@ func main() {
 
 	flag.Parse()
 
-	db, err := sql.Open(
-		"postgres",
-		"host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable",
-	)
+	seedDatabaseURL := os.Getenv("SEED_DATABASE_URL")
+	if seedDatabaseURL == "" {
+		log.Fatal("set SEED_DATABASE_URL before running the seed command")
+	}
+
+	db, err := sql.Open("postgres", seedDatabaseURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,7 +48,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println("connected to practice_test")
+	log.Println("connected to seed database")
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 

@@ -175,49 +175,48 @@ Middleware для аутентификации и логирования.
 
 ## Запуск
 
-### 1. Клонировать репозиторий
+Нужны Go 1.26, Docker Compose и CLI `golang-migrate`. Настройки подключения хранятся в локальном `.env`: создайте его по образцу [.env.example](.env.example), замените значения-заглушки и не добавляйте файл в Git. Для запуска Go на компьютере укажите `DB_HOST=localhost` и `REDIS_HOST=localhost`. Docker Compose передаёт контейнеру приложения адреса сервисов самостоятельно.
+
+1. Поднимите PostgreSQL и Redis:
+
+   ```bash
+   docker compose up -d postgres redis
+   ```
+
+2. Примените миграции к базе, указанной в `DB_NAME`. Вместо `<DATABASE_URL>` подставьте локальный PostgreSQL URL с параметрами из `.env`:
+
+   ```bash
+   migrate -path ./migrations -database "<DATABASE_URL>" up
+   ```
+
+3. Запустите приложение одним из способов:
+
+   ```bash
+   go run .
+   ```
+
+   или
+
+   ```bash
+   docker compose up --build -d app
+   ```
+
+API доступно по адресу `http://localhost:8080`.
+
+## Тесты
+
+Интеграционные тесты в `internal/repository` используют отдельную базу `practice_test`. Скрипт Docker создаёт её при первой инициализации тома PostgreSQL. Для уже существующего тома проверьте, что база создана. Тесты берут `DB_HOST`, `DB_PORT`, `DB_USER` и `DB_PASSWORD` из окружения или корневого `.env`; имя тестовой базы зафиксировано в тестовом коде.
+
+После запуска PostgreSQL примените те же миграции к тестовой базе и запустите тесты:
 
 ```bash
-git clone <repository-url>
-cd shelf
+migrate -path ./migrations -database "<TEST_DATABASE_URL>" up
+go test ./...
 ```
 
-### 2. Настроить переменные окружения
+`<TEST_DATABASE_URL>` — локальный PostgreSQL URL для `practice_test` с теми же пользователем и паролем, что в `.env`. Тесты очищают таблицы `player_games`, `players` и `games` и сбрасывают их идентификаторы. Не храните в `practice_test` нужные данные.
 
-Создать `.env` файл и указать настройки PostgreSQL, Redis и JWT.
-
-Пример:
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=shelf
-
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-JWT_SECRET=secret
-```
-
-### 3. Запустить инфраструктуру
-
-```bash
-docker compose up -d
-```
-
-### 4. Запустить приложение
-
-```bash
-go run .
-```
-
-После запуска API будет доступно по адресу:
-
-```text
-http://localhost:8080
-```
+Сейчас интеграционные тесты проверяют часть операций репозиториев игроков, игр и покупок. Авторизация, возврат, кэш и HTTP-обработчики пока не покрыты тестами.
 
 ## Что реализовано в проекте
 

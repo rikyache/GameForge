@@ -12,11 +12,12 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: kirill
-      DB_PASSWORD: 12345
-      DB_NAME: practice
+      DB_USER: ${DB_USER:?Set DB_USER in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:?Set DB_NAME in .env}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
 
 
   postgres:
@@ -25,12 +26,12 @@ services:
     restart: unless-stopped
 
     environment:
-      POSTGRES_USER: kirill
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: practice
+      POSTGRES_USER: ${DB_USER:?Set DB_USER in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      POSTGRES_DB: ${DB_NAME:?Set DB_NAME in .env}
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kirill -d practice"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 5

@@ -3,18 +3,41 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"net"
+	"net/url"
+	"os"
 	"testing"
+
+	"github.com/joho/godotenv"
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 
-	db, err := sql.Open(
-		"postgres",
-		"host=localhost port=5432 user=kirill password=12345 dbname=practice_test sslmode=disable",
-	)
+	_ = godotenv.Load("../../.env")
+
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	if host == "" || port == "" || user == "" || password == "" {
+		t.Fatal("set DB_HOST, DB_PORT, DB_USER and DB_PASSWORD for integration tests")
+	}
+
+	connURL := url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(user, password),
+		Host:   net.JoinHostPort(host, port),
+		Path:   "/practice_test",
+	}
+	query := connURL.Query()
+	query.Set("sslmode", "disable")
+	connURL.RawQuery = query.Encode()
+
+	db, err := sql.Open("postgres", connURL.String())
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal(fmt.Errorf("open practice_test: %w", err))
 	}
 
 	if err = db.Ping(); err != nil {
