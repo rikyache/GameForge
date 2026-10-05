@@ -3,12 +3,12 @@ package models
 import "time"
 
 type Player struct {
-	ID           int64     `db:"id"			json:"id"`
+	ID           int64     `db:"id"				json:"id"`
 	Name         string    `db:"name"			json:"name"`
 	Balance      int       `db:"balance"		json:"balance"`
 	Email        string    `db:"email"			json:"email"`
 	PasswordHash string    `db:"password_hash"	json:"password_hash"`
-	CreatedAt    time.Time `db:"created_at"	json:"created_at"`
+	CreatedAt    time.Time `db:"created_at"		json:"created_at"`
 }
 
 type PlayerProfile struct {

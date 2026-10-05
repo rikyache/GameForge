@@ -102,7 +102,7 @@ func main() {
 	// Register, login
 	mux.HandleFunc("POST /auth/register", authHandler.Register)
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
-	mux.HandleFunc("Post /auth/logout", authMiddleware(http.HandlerFunc(authHandler.Logout)))
+	mux.Handle("POST /auth/logout", authMiddleware(http.HandlerFunc(authHandler.Logout)))
 	// TODO
 	// make logout func
 
