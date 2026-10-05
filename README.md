@@ -175,21 +175,30 @@ Middleware для аутентификации и логирования.
 
 ## Запуск
 
-Нужны Go 1.26, Docker Compose и CLI `golang-migrate`. Настройки подключения хранятся в локальном `.env`: создайте его по образцу [.env.example](.env.example), замените значения-заглушки и не добавляйте файл в Git. Для запуска Go на компьютере укажите `DB_HOST=localhost` и `REDIS_HOST=localhost`. Docker Compose передаёт контейнеру приложения адреса сервисов самостоятельно.
+Нужны Go 1.26, Docker Compose и CLI `golang-migrate`.
 
-1. Поднимите PostgreSQL и Redis:
+1. Клонируйте репозиторий и перейдите в каталог проекта:
+
+   ```bash
+   git clone https://github.com/rikyache/GameForge.git
+   cd GameForge
+   ```
+
+2. Создайте локальный `.env` по образцу [.env.example](.env.example) и замените значения-заглушки. Не добавляйте `.env` в Git. Для запуска Go на компьютере укажите `DB_HOST=localhost` и `REDIS_HOST=localhost`. Docker Compose передаёт контейнеру приложения адреса сервисов самостоятельно.
+
+3. Поднимите PostgreSQL и Redis:
 
    ```bash
    docker compose up -d postgres redis
    ```
 
-2. Примените миграции к базе, указанной в `DB_NAME`. Вместо `<DATABASE_URL>` подставьте локальный PostgreSQL URL с параметрами из `.env`:
+4. Примените миграции к базе, указанной в `DB_NAME`. Вместо `<DATABASE_URL>` подставьте локальный PostgreSQL URL с параметрами из `.env`:
 
    ```bash
    migrate -path ./migrations -database "<DATABASE_URL>" up
    ```
 
-3. Запустите приложение одним из способов:
+5. Запустите приложение одним из способов:
 
    ```bash
    go run .
